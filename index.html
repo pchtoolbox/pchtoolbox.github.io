@@ -375,23 +375,36 @@ function renderLogin(msg) {
     '<input class="field" id="li-user" name="username" autocomplete="username" autocapitalize="none" required placeholder="e.g. manhaes">' +
     '<label for="li-pin">PIN</label><input class="field codeinput" id="li-pin" name="password" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" required>' +
     '<button class="btn big" type="submit" id="li-pgo" style="width:100%">Sign in</button></form>' +
-    '<button class="linkbtn" type="button" id="li-admin" style="margin-top:12px">Administrator sign-in (e-mail code) →</button></div>' +
-    '<div class="panel hidden" style="margin-top:12px" id="loginpanel"><div class="eyebrow" style="margin-bottom:8px">Administrator</div><form id="f-email"><label for="li-email">Administrator e-mail</label>' +
-    '<input class="field" id="li-email" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com">' +
-    '<button class="btn big" type="submit" id="li-send">Send sign-in code</button></form>' +
+    '<button class="linkbtn" type="button" id="li-admin" style="margin-top:12px">Administrator sign-in →</button></div>' +
+    '<div class="panel hidden" style="margin-top:12px" id="loginpanel"><div class="eyebrow" style="margin-bottom:8px">Administrator</div>' +
+    '<form id="f-apw" autocomplete="on"><label for="li-email">E-mail</label>' +
+    '<input class="field" id="li-email" name="username" type="email" autocomplete="username" inputmode="email" required placeholder="name@example.com">' +
+    '<label for="li-pw">Password</label><input class="field" id="li-pw" name="password" type="password" autocomplete="current-password">' +
+    '<button class="btn big" type="submit" id="li-pwgo" style="width:100%">Sign in</button></form>' +
+    '<button class="linkbtn" type="button" id="li-send" style="margin-top:12px">First time or forgot your password? Get an e-mail code →</button>' +
     '<form id="f-code" class="hidden" style="margin-top:14px"><div class="banner" id="li-msg"></div><label for="li-code" style="margin-top:12px">6-digit code</label>' +
     '<input class="field codeinput" id="li-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>' +
-    '<button class="btn big" type="submit" id="li-go">Sign in</button><button class="linkbtn" type="button" id="li-back" style="margin-top:10px">Use a different e-mail</button></form>' +
+    '<button class="btn big" type="submit" id="li-go">Continue</button><button class="linkbtn" type="button" id="li-back" style="margin-top:10px">← Back to password sign-in</button></form>' +
     '<button class="linkbtn" type="button" id="li-mech" style="margin-top:12px">← Mechanic sign-in (PIN)</button></div>' +
     '<p class="muted" style="margin-top:14px;line-height:1.6">Accounts and PINs are issued only by a PCH administrator. Tip: let your phone save your PIN — it can then fill it in with your fingerprint or Face ID. Auditors: scan the QR code on the toolbox — no sign-in required.</p>' +
     '</div></div></div>';
-  $('f-email').onsubmit = function (e) {
-    e.preventDefault(); var b = $('li-send'); b.disabled = true; b.textContent = 'Sending…';
-    api('requestLoginCode', $('li-email').value).then(function (r) {
-      $('li-msg').textContent = r.message; $('f-code').classList.remove('hidden'); $('f-email').classList.add('hidden'); $('li-code').focus();
-    }).catch(fail).then(function () { b.disabled = false; b.textContent = 'Send sign-in code'; });
+  $('li-send').onclick = function () {
+    var em = $('li-email').value.trim();
+    if (!em) { toast('Enter your e-mail first.', true); $('li-email').focus(); return; }
+    var b = $('li-send'); b.disabled = true;
+    api('requestLoginCode', em).then(function (r) {
+      $('li-msg').textContent = r.message; $('f-code').classList.remove('hidden'); $('f-apw').classList.add('hidden'); b.classList.add('hidden'); $('li-code').focus();
+    }).catch(fail).then(function () { b.disabled = false; });
   };
-  $('li-back').onclick = function () { $('f-code').classList.add('hidden'); $('f-email').classList.remove('hidden'); };
+  $('f-apw').onsubmit = function (e) {
+    e.preventDefault();
+    if (!$('li-pw').value) { toast('Enter your password, or tap "First time or forgot your password?".', true); return; }
+    var b = $('li-pwgo'); b.disabled = true; b.textContent = 'Checking…';
+    api('loginWithPassword', $('li-email').value, $('li-pw').value).then(function (r) {
+      S.token = r.token; S.user = r.user; store('pchtc_session', r.token); route();
+    }).catch(function (err) { fail(err); b.disabled = false; b.textContent = 'Sign in'; $('li-pw').value = ''; });
+  };
+  $('li-back').onclick = function () { $('f-code').classList.add('hidden'); $('f-apw').classList.remove('hidden'); $('li-send').classList.remove('hidden'); };
   $('li-admin').onclick = function () { $('pinpanel').classList.add('hidden'); $('loginpanel').classList.remove('hidden'); $('li-email').focus(); };
   $('li-mech').onclick = function () { $('loginpanel').classList.add('hidden'); $('pinpanel').classList.remove('hidden'); };
   try { if (/[?&]admin=1/.test(location.search)) $('li-admin').onclick(); } catch (e) { }
@@ -404,7 +417,8 @@ function renderLogin(msg) {
   $('f-code').onsubmit = function (e) {
     e.preventDefault(); var b = $('li-go'); b.disabled = true; b.textContent = 'Checking…';
     api('verifyLoginCode', $('li-email').value, $('li-code').value).then(function (r) {
-      S.token = r.token; S.user = r.user; store('pchtc_session', r.token); route();
+      S.token = r.token; S.user = r.user; store('pchtc_session', r.token);
+      if (r.needsPassword) renderSetPassword(r.user.hasPassword); else route();
     }).catch(function (e) { fail(e); b.disabled = false; b.textContent = 'Sign in'; });
   };
 }
@@ -490,6 +504,27 @@ function signOutBtn() { return '<button class="secondary big" id="signout" style
 function bindSignOut() { if ($('signout')) $('signout').onclick = signOut; if ($('chgpin')) $('chgpin').onclick = function () { renderChangePin(false); }; }
 
 // ---------- create / change personal PIN ----------
+/** Administrator / Quality Manager: choose a password (after an e-mail code). */
+function renderSetPassword(reset) {
+  closeModal();
+  $('app').innerHTML = '<div class="mobile-wrap login"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') +
+    '<h2>' + (reset ? 'Choose a new password' : 'Create your password') + '</h2><div class="sub">' + esc(S.user ? S.user.displayName : '') + '</div></div><div class="phonebody">' +
+    '<div class="banner">From now on you sign in with your <b>e-mail and this password</b> – no code needed. If you forget it, use “First time or forgot your password?” to get a code and choose a new one.</div>' +
+    '<div class="panel" style="margin-top:12px"><form id="f-sp" autocomplete="on"><input type="email" name="username" autocomplete="username" value="' + esc(S.user ? S.user.email : '') + '" style="display:none">' +
+    '<label for="sp-new">New password (at least 8 characters, letters and a number)</label><input class="field" id="sp-new" type="password" autocomplete="new-password" minlength="8" maxlength="64" required>' +
+    '<label for="sp-new2">Repeat password</label><input class="field" id="sp-new2" type="password" autocomplete="new-password" minlength="8" maxlength="64" required>' +
+    '<button class="btn big" id="sp-go" style="width:100%">Save password</button></form>' +
+    '<button class="linkbtn" id="sp-later" style="margin-top:10px">' + (reset ? 'Cancel' : 'Later') + '</button></div></div></div></div>';
+  $('sp-later').onclick = function () { route(); };
+  $('f-sp').onsubmit = function (e) {
+    e.preventDefault();
+    if ($('sp-new').value !== $('sp-new2').value) { toast('The two passwords do not match.', true); return; }
+    var b = $('sp-go'); b.disabled = true;
+    api('setMyPassword', S.token, $('sp-new').value).then(function () { if (S.user) S.user.hasPassword = true; toast('Password saved. Next time sign in with your e-mail and password.'); route(); })
+      .catch(function (err) { b.disabled = false; fail(err); });
+  };
+}
+
 function renderChangePin(required) {
   closeModal();
   $('app').innerHTML = '<div class="mobile-wrap login"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') +
