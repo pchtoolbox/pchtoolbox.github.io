@@ -744,7 +744,7 @@ function tagSearch() {
     loading('tg-res');
     authed('findToolTag', q).then(function (rows) {
       $('tg-res').innerHTML = rows.length ? rows.map(function (r) {
-        return '<div class="item"><div class="row"><b style="font-size:18px">🏷 Tag ' + esc(r.tag) + '</b>' + (r.status && r.status !== 'ACTIVE' ? '<span class="pill grey">' + esc(r.status) + '</span>' : '') + '</div>' +
+        return '<div class="item"><div class="row"><b style="font-size:18px">🏷 Tag ' + esc(r.tag) + '</b>' + (r.source === 'register' ? '<span class="pill grey">NOT IN THE APP</span>' : r.status === 'ACTIVE' ? '<span class="pill">ACTIVE</span>' : '<span class="pill red">DEACTIVATED – LEFT PCH</span>') + '</div>' +
           '<div style="font-size:17px;font-weight:700;margin-top:2px">' + esc(r.name) + '</div><div class="muted">' +
           [r.employeeNo ? 'Emp ' + esc(r.employeeNo) : '', r.toolboxes.length ? 'Toolbox ' + esc(r.toolboxes.join(', ')) : '', r.source === 'register' ? 'From the tag register (not in the app)' : ''].filter(String).join(' · ') + '</div></div>';
       }).join('') : '<div class="alert red">No owner found for tag ' + esc(q) + '. Please tell the tool controller.</div>';
