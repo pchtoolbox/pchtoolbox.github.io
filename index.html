@@ -128,7 +128,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .modal.zoom img{width:100%;height:auto;border-radius:8px;display:block}
 .actionline{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
 
-/* ---------- mechanic & auditor (phone layout) ---------- */
+/* ---------- engineer & auditor (phone layout) ---------- */
 .mobile-wrap{display:flex;justify-content:center;min-height:100vh}
 .phone{width:100%;max-width:440px;background:#f4f7fa;display:flex;flex-direction:column;min-height:100vh}
 .phonehead{background:var(--navy);color:#fff;padding:22px 18px calc(18px)}
@@ -392,7 +392,7 @@ function renderLogin(msg) {
     '<form id="f-code" class="hidden" style="margin-top:14px"><div class="banner" id="li-msg"></div><label for="li-code" style="margin-top:12px">6-digit code</label>' +
     '<input class="field codeinput" id="li-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>' +
     '<button class="btn big" type="submit" id="li-go">Continue</button><button class="linkbtn" type="button" id="li-back" style="margin-top:10px">← Back to password sign-in</button></form>' +
-    '<button class="linkbtn" type="button" id="li-mech" style="margin-top:12px">← Mechanic sign-in (PIN)</button></div>' +
+    '<button class="linkbtn" type="button" id="li-mech" style="margin-top:12px">← Engineer sign-in (PIN)</button></div>' +
     '<p class="muted" style="margin-top:14px;line-height:1.6">Accounts and PINs are issued only by a PCH administrator. Tip: let your phone save your PIN — it can then fill it in with your fingerprint or Face ID. Auditors: scan the QR code on the toolbox — no sign-in required.</p>' +
     '</div></div></div>';
   $('li-send').onclick = function () {
@@ -720,7 +720,7 @@ function bindLostForm(toolboxId, after) {
 // ================= ADMIN =================
 var ADMIN_MENU = [['dashboard', '▦', 'Dashboard'], ['toolboxes', '▣', 'Toolboxes'], ['pending', '◷', 'Pending approvals'], ['employees', '☺', 'Employees & Access'],
   ['history', '≡', 'Revision history'], ['lost', '⚑', 'Lost tools'], ['qr', '▤', 'QR codes'], ['settings', '⚙', 'Settings'], ['audit', '✎', 'Audit log']];
-var ROLE_LABEL = { ADMIN: 'Administrator', QUALITY: 'Quality Manager', MECHANIC: 'Mechanic' };
+var ROLE_LABEL = { ADMIN: 'Administrator', QUALITY: 'Quality Manager', MECHANIC: 'Engineer' };
 var MGR_ONLY = ['settings'];
 var ADMIN_TITLE = { dashboard: 'Tool Control Dashboard', toolboxes: 'Toolboxes', pending: 'Pending Approvals', employees: 'Employees & Access', history: 'Revision History', lost: 'Lost Tools', qr: 'QR Codes', settings: 'Settings', audit: 'Audit Log', toolbox: 'Toolbox' };
 
@@ -803,7 +803,7 @@ function toolboxForm() {
     '<label for="nt-label">Label / display name</label><input class="field" id="nt-label" required maxlength="80" placeholder="e.g. Diego">' +
     '<label for="nt-loc">Location (optional)</label><input class="field" id="nt-loc" maxlength="80">' +
     '<label for="nt-dr">Number of drawers</label><input class="field" id="nt-dr" type="number" min="1" max="30" value="6">' +
-    '<label class="check"><input type="checkbox" id="nt-draft"> Create as DRAFT (not visible to mechanics or QR until activated)</label>' +
+    '<label class="check"><input type="checkbox" id="nt-draft"> Create as DRAFT (not visible to engineers or QR until activated)</label>' +
     '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Create toolbox</button></div></form>');
   $('nt').onsubmit = function (e) {
     e.preventDefault();
@@ -818,7 +818,7 @@ function aToolbox(body, id) {
     var qr = qrImg(d.publicUrl, 4);
     body.innerHTML = '<div class="row" style="margin-bottom:10px"><button class="secondary" id="tb-back">← All toolboxes</button><div class="gap"><button class="secondary" id="tb-print">Print register</button><button class="secondary" id="tb-check">Record check</button><button class="secondary danger" id="tb-lost">Report missing tool</button></div></div>' +
       (d.isTest ? '<div class="alert">TEST / SIMULATION toolbox — isolated from live registers.</div>' : '') +
-      (d.status === 'DRAFT' ? '<div class="alert">DRAFT — imported or newly created. Confirm the number, mechanic and drawer count, upload and approve baseline photos, then set the status to ACTIVE. ' + esc(d.notes || '') + '</div>' : '') +
+      (d.status === 'DRAFT' ? '<div class="alert">DRAFT — imported or newly created. Confirm the number, engineer and drawer count, upload and approve baseline photos, then set the status to ACTIVE. ' + esc(d.notes || '') + '</div>' : '') +
       (d.openReports.length ? '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b><br>' + d.openReports.map(function (x) { return esc(x.reportId + ' · ' + x.toolDescription + ' · ' + fdt(x.reportedAt)); }).join('<br>') + '</div>' : '') +
       '<div class="layout" style="margin-top:12px"><div><div class="row"><h3>Toolbox ' + esc(d.toolboxNumber || '') + ' · Drawer Register</h3><span class="gap">' + pill(d.status) + '<span class="pill blue">REV ' + pad2(d.documentRevision) + '</span></span></div>' +
       '<div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, true); }).join('') + '</div>' +
@@ -828,7 +828,7 @@ function aToolbox(body, id) {
       '<label for="te-num">Toolbox number</label><input class="field" id="te-num" maxlength="20" value="' + esc(d.toolboxNumber) + '">' +
       '<label for="te-label">Label</label><input class="field" id="te-label" maxlength="80" value="' + esc(d.label) + '">' +
       '<label for="te-loc">Location</label><input class="field" id="te-loc" maxlength="80" value="' + esc(d.location || '') + '">' +
-      '<label for="te-mech">Primary mechanic</label><select class="field" id="te-mech"><option value="">—</option>' + users.filter(function (u) { return u.status === 'ACTIVE'; }).map(function (u) { return '<option value="' + u.userId + '"' + (u.userId === d.mechanicUserId ? ' selected' : '') + '>' + esc(u.displayName) + '</option>'; }).join('') + '</select>' +
+      '<label for="te-mech">Primary engineer</label><select class="field" id="te-mech"><option value="">—</option>' + users.filter(function (u) { return u.status === 'ACTIVE'; }).map(function (u) { return '<option value="' + u.userId + '"' + (u.userId === d.mechanicUserId ? ' selected' : '') + '>' + esc(u.displayName) + '</option>'; }).join('') + '</select>' +
       '<label for="te-dr">Drawers</label><input class="field" id="te-dr" type="number" min="1" max="30" value="' + d.drawerCount + '">' +
       '<label for="te-st">Status</label><select class="field" id="te-st">' + ['ACTIVE', 'DRAFT', 'TEST', 'ARCHIVED'].map(function (s) { return '<option' + (s === d.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
       '<label class="check"><input type="checkbox" id="te-pub"' + (d.publicEnabled ? ' checked' : '') + '> Public QR auditor view enabled</label>' +
@@ -883,7 +883,7 @@ function qrSvg(url) {
   for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) path += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" width="160" height="160" shape-rendering="crispEdges" style="display:block;margin:8px auto"><rect width="100%" height="100%" fill="#fff"/><path d="' + path + '" fill="#000"/></svg>';
 }
-/** Admin / Quality Manager: choose several toolboxes (mechanics) and print their labels together on the same sheets. */
+/** Admin / Quality Manager: choose several toolboxes (engineers) and print their labels together on the same sheets. */
 function pickAndPrintQr(items) {
   var go = function (list) {
     if (!list.length) { toast('No toolboxes with a QR code.'); return; }
@@ -1009,21 +1009,21 @@ function aEmployees(body, focus) {
           '</div></td></tr>'; }).join('') : '<tr><td colspan="7" class="empty">None.</td></tr>';
     };
     var head = '<thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Login / PIN</th><th class="hide-sm">Toolboxes</th><th class="hide-sm">Last sign-in</th><th></th></tr></thead>';
-    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Employees &amp; Access</h3><div class="muted">Only the administrator and the Quality Manager register mechanics. A welcome e-mail with the app link, login name and PIN is sent automatically. There is no self-registration.</div></div><div class="gap"><button class="secondary mgr" id="e-shared">Same PIN for all mechanics</button><button class="secondary mgr" id="e-pins">Issue individual PINs</button><button class="btn" id="e-add">+ Add employee</button></div></div>' +
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Employees &amp; Access</h3><div class="muted">Only the administrator and the Quality Manager register engineers. A welcome e-mail with the app link, login name and PIN is sent automatically. There is no self-registration.</div></div><div class="gap"><button class="secondary mgr" id="e-shared">Same PIN for all engineers</button><button class="secondary mgr" id="e-pins">Issue individual PINs</button><button class="btn" id="e-add">+ Add employee</button></div></div>' +
       '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(act, false) + '</tbody></table></div></div>' +
       '<div class="panel" style="margin-top:14px" id="former"><h3>Former Employees</h3><div class="muted">Deactivated accounts: access revoked; records, photos and history are preserved. Visible to administrators only.</div>' +
       '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(former, true) + '</tbody></table></div></div>';
     $('e-add').onclick = function () { employeeForm(null); };
     $('e-pins').onclick = function () { issuePins([]); };
     $('e-shared').onclick = function () {
-      openModal('Same PIN for all mechanics', '<p>Every mechanic signs in with their <b>surname</b> and this PIN. New mechanics get it automatically. Each person can still change to a personal PIN later.</p>' +
-        '<div class="alert">Anyone who knows a surname and this PIN can sign in as that mechanic. Photo changes still need approval by the administrator or Quality Manager.</div>' +
+      openModal('Same PIN for all engineers', '<p>Every engineer signs in with their <b>surname</b> and this PIN. New engineers get it automatically. Each person can still change to a personal PIN later.</p>' +
+        '<div class="alert">Anyone who knows a surname and this PIN can sign in as that engineer. Photo changes still need approval by the administrator or Quality Manager.</div>' +
         '<form id="sp"><label for="sp-pin">Shared PIN (3–6 numbers)</label><input class="field codeinput" id="sp-pin" inputmode="numeric" maxlength="6" required>' +
-        '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Apply to all mechanics</button></div></form>');
+        '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Apply to all engineers</button></div></form>');
       $('sp').onsubmit = function (e) {
         e.preventDefault();
         authed('adminSetSharedPin', $('sp-pin').value).then(function (list) {
-          $('modal-body').innerHTML = '<div class="alert ok">Shared PIN applied to ' + list.length + ' mechanics.</div><div class="tablewrap"><table class="tbl"><thead><tr><th>Employee</th><th>Login name</th><th>Account</th></tr></thead><tbody>' +
+          $('modal-body').innerHTML = '<div class="alert ok">Shared PIN applied to ' + list.length + ' engineers.</div><div class="tablewrap"><table class="tbl"><thead><tr><th>Employee</th><th>Login name</th><th>Account</th></tr></thead><tbody>' +
             list.map(function (x) { return '<tr><td>' + esc(x.displayName) + '</td><td><b>' + esc(x.loginName) + '</b></td><td>' + esc(x.status) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="actionline"><button class="btn" onclick="closeModal();adminView(\'employees\')">Done</button></div>';
         }).catch(fail);
       };
@@ -1065,13 +1065,13 @@ function employeeForm(u) {
   var have = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : [];
   var canSub = u ? (u.toolboxes.length ? u.toolboxes[0].canSubmit : true) : true;
   var qm = S.user.role === 'QUALITY';
-  openModal(u ? 'Edit employee' : (qm ? 'Register Mechanic' : 'Add Employee'), '<form id="ef">' +
+  openModal(u ? 'Edit employee' : (qm ? 'Register Engineer' : 'Add Employee'), '<form id="ef">' +
     '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : '') + '">' +
     '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
     '<div class="compare"><div><label for="ef-emp">Employee No. (optional)</label><input class="field" id="ef-emp" maxlength="20" value="' + esc(u ? u.employeeNo || '' : '') + '"></div>' +
     '<div><label for="ef-tag">Tool Tag No. (optional)</label><input class="field" id="ef-tag" maxlength="20" value="' + esc(u ? u.toolTagNo || '' : '') + '"></div></div>' +
     (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
-    '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Mechanic</option>' + (qm ? '' : '<option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option>') + '</select>' +
+    '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Engineer</option>' + (qm ? '' : '<option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option>') + '</select>' +
     '<label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
       return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
     '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label>' +
@@ -1148,7 +1148,7 @@ function aSettings(body) {
       '<label for="st-org">Organisation name</label><input class="field" id="st-org" maxlength="80" value="' + esc(s.orgName) + '">' +
       '<label class="check"><input type="checkbox" id="st-pub"' + (s.publicAuditorEnabled ? ' checked' : '') + '> Public QR auditor access enabled (anyone holding a toolbox QR can view its approved photos)</label>' +
       '<label for="st-lost">Missing-tool alert e-mails (one or more, separated by commas)</label><textarea class="field" id="st-lost" placeholder="e.g. qasm@pch.com.au, stores@pch.com.au">' + esc(String(s.lostToolEmails || '').split(',').join(', ')) + '</textarea>' +
-      '<p class="muted" style="margin-top:-6px">Every missing-tool alert from a mechanic is e-mailed to these addresses. If empty, it goes to the administrators.</p>' +
+      '<p class="muted" style="margin-top:-6px">Every missing-tool alert from a engineer is e-mailed to these addresses. If empty, it goes to the administrators.</p>' +
       '<label for="st-reg">Register PDF e-mails – receive the updated register PDF (new REV) after every approval</label><textarea class="field" id="st-reg" placeholder="e.g. gavin.merten@pacificcrown.com">' + esc(String(s.registerEmails || '').split(',').join(', ')) + '</textarea>' +
       '<label for="st-mail">Extra notification e-mails for photo approvals (comma separated)</label><input class="field" id="st-mail" value="' + esc(s.notifyEmails) + '">' +
       '<button class="btn">Save settings</button></form></div>' +
