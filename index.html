@@ -258,8 +258,8 @@ function fd(iso) { return iso ? DF.format(new Date(iso)) : '—'; }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
 function uid() { try { return crypto.randomUUID(); } catch (e) { var a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); } }
 function boxName(b) { return (b.toolboxNumber ? b.toolboxNumber + ' · ' : '') + (b.label || ''); }
-var STATUS_PILL = { ACTIVE: '', TEST: 'blue', DRAFT: 'grey', ARCHIVED: 'grey', PENDING: 'pending', APPROVED: '', REJECTED: 'red', INVITED: 'pending', INACTIVE: 'grey', OPEN: 'red', CLOSED_FOUND: '', CLOSED_NOT_FOUND: 'grey', SUBMITTED: 'pending', ARCHIVED_EV: 'grey', MISSING_TOOL_REPORTED: 'red', MISSING_TOOL_CLOSED: 'grey', PHOTO_REMOVED: 'grey', ALL_PRESENT: '', EXCEPTIONS: 'red' };
-var STATUS_TEXT = { ALL_PRESENT: 'ALL PRESENT', EXCEPTIONS: 'EXCEPTIONS', CLOSED_FOUND: 'CLOSED – FOUND', CLOSED_NOT_FOUND: 'CLOSED – NOT FOUND', OPEN: 'OPEN TOOL DISCREPANCY', PENDING: 'AWAITING APPROVAL', MISSING_TOOL_REPORTED: 'MISSING TOOL', MISSING_TOOL_CLOSED: 'DISCREPANCY CLOSED', PHOTO_REMOVED: 'PHOTO REMOVED' };
+var STATUS_PILL = { ACTIVE: '', TEST: 'blue', DRAFT: 'grey', ARCHIVED: 'grey', PENDING: 'pending', APPROVED: '', REJECTED: 'red', INVITED: 'pending', INACTIVE: 'grey', OPEN: 'red', CLOSED_FOUND: '', CLOSED_NOT_FOUND: 'grey', AWAITING_QM: 'pending', CLOSED_OTHER: '', CLOSED_BY_QM: 'grey', MISSING_TOOL_UPDATE: 'pending', MISSING_TOOL_RETURNED: 'red', SUBMITTED: 'pending', ARCHIVED_EV: 'grey', MISSING_TOOL_REPORTED: 'red', MISSING_TOOL_CLOSED: 'grey', PHOTO_REMOVED: 'grey', ALL_PRESENT: '', EXCEPTIONS: 'red' };
+var STATUS_TEXT = { ALL_PRESENT: 'ALL PRESENT', EXCEPTIONS: 'EXCEPTIONS', CLOSED_FOUND: 'CLOSED – FOUND', CLOSED_NOT_FOUND: 'CLOSED – NOT FOUND', OPEN: 'OPEN TOOL DISCREPANCY', AWAITING_QM: 'AWAITING QUALITY MANAGER', CLOSED_OTHER: 'CLOSED – SOLUTION ACCEPTED', CLOSED_BY_QM: 'CLOSED BY QUALITY MANAGER', MISSING_TOOL_UPDATE: 'SOLUTION SENT', MISSING_TOOL_RETURNED: 'RETURNED TO ENGINEER', PENDING: 'AWAITING APPROVAL', MISSING_TOOL_REPORTED: 'MISSING TOOL', MISSING_TOOL_CLOSED: 'DISCREPANCY CLOSED', PHOTO_REMOVED: 'PHOTO REMOVED' };
 function evTitle(h) { return /^MISSING_TOOL/.test(h.eventType) ? (h.drawerNumber ? 'Drawer ' + pad2(h.drawerNumber) : 'Toolbox') : 'Drawer ' + pad2(h.drawerNumber) + ' · Rev ' + pad2(h.revision); }
 function pill(st) { return '<span class="pill ' + (STATUS_PILL[st] || 'grey') + '">' + esc(STATUS_TEXT[st] || st) + '</span>'; }
 
@@ -307,11 +307,12 @@ function brand(sub, light) {
 // ---------- images (private proxy) ----------
 function imgKey(kind, a, size) { return kind + ':' + a + ':' + size; }
 function fetchImage(kind, a, b, size) {
-  var k = imgKey(kind, kind === 'pub' ? b : a, size);
+  var k = imgKey(kind, kind === 'pub' ? b : kind === 'lt' ? a + '/' + b : a, size);
   if (S.imgs[k]) return Promise.resolve(S.imgs[k]);
   var p;
   if (kind === 'pub') p = api('getPublicDrawerImage', a, b, size);
   else if (kind === 'drawer') p = authed('getDrawerImage', a, size);
+  else if (kind === 'lt') p = authed('getLostToolImage', a, b, size);
   else p = authed('getSubmissionImage', a, size);
   return p.then(function (r) { S.imgs[k] = r.dataUrl; return r.dataUrl; });
 }
@@ -573,7 +574,7 @@ function mechTab() {
       h += '<div class="panel"><div class="row"><strong>Toolbox ' + esc(d.toolboxNumber || '') + '</strong>' + pill(d.status) + '</div>' +
         '<p class="muted">' + d.drawerCount + ' registered drawers · Register REV ' + pad2(d.documentRevision) + ' · ' + d.withPhoto + ' with approved photo</p>' +
         (d.lastCheck ? '<p class="muted">Last check: ' + fdt(d.lastCheck.checkedAt) + ' · ' + (STATUS_TEXT[d.lastCheck.result] || d.lastCheck.result) + '</p>' : '<p class="muted">No toolbox check recorded yet.</p>') + '</div>';
-      if (d.openReports.length) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b><br>' + d.openReports.map(function (r) { return esc(r.reportId + ' · ' + r.toolDescription); }).join('<br>') + '</div>';
+      if (d.openReports.length) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b>' + d.openReports.map(function (r) { return '<div style="margin-top:8px">' + esc(r.reportId + ' · ' + r.toolDescription) + ' ' + pill(r.status) + (r.qmNotes && r.status === 'OPEN' ? '<div class="muted">Quality Manager: ' + esc(r.qmNotes) + '</div>' : '') + (r.mine && r.status === 'OPEN' ? '<button class="btn" style="margin-top:6px;width:100%" data-ltsol="' + r.reportId + '">✓ Tool found / submit solution</button>' : r.status === 'AWAITING_QM' ? '<div class="muted">Solution sent – waiting for the Quality Manager.</div>' : '') + '</div>'; }).join('') + '</div>';
       if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 Update Drawer Photo</button>';
       h += '<button class="btn danger big" id="m-alert" style="margin-top:9px">⚠ Missing Tool Alert</button>' +
         '<button class="secondary big" id="m-check" style="margin-top:9px">✓ Record Toolbox Check</button>' +
@@ -583,6 +584,7 @@ function mechTab() {
     h += '<h3 style="margin:20px 0 0">My Drawers</h3><div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, false); }).join('') + '</div>';
     if (S.mtab === 'home') h += signOutBtn();
     $('m-body').innerHTML = h; hydratePhotos($('m-body')); bindBoxSelect(); bindSignOut(); bindDrawerButtons($('m-body'));
+    $('m-body').querySelectorAll('[data-ltsol]').forEach(function (b) { b.onclick = function () { ltSolutionForm(b.dataset.ltsol, mechTab); }; });
     if ($('m-update')) $('m-update').onclick = function () { openUpdate(null); };
     if ($('m-qr')) $('m-qr').onclick = function () { choosePrintQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
     if ($('m-alert')) $('m-alert').onclick = function () { openModal('⚠ Missing Tool Alert', lostFormHtml(d)); bindLostForm(d.toolboxId, mechTab); };
@@ -702,18 +704,51 @@ function bindCheckForm(toolboxId, after) {
   };
 }
 function lostFormHtml(d) {
-  return '<div class="panel" style="margin-top:12px"><h3 style="color:var(--red)">Report Missing Tool</h3><p class="muted">Sends an immediate e-mail alert (with your name) to the PCH missing-tool contacts and records an OPEN TOOL DISCREPANCY in the history.</p>' +
+  return '<div class="panel" style="margin-top:12px"><h3 style="color:var(--red)">Report Missing Tool</h3><p class="muted">Sends an immediate e-mail alert (with your name and photo) to the PCH missing-tool contacts and records an OPEN TOOL DISCREPANCY. It stays open until you send a photo of the found tool (or another solution) and the Quality Manager approves it.</p>' +
     '<form id="lt-form"><label for="lt-tool">Missing tool</label><input class="field" id="lt-tool" required maxlength="300" placeholder="e.g. 10 mm combination spanner">' +
     '<label for="lt-drawer">Drawer</label><select class="field" id="lt-drawer"><option value="">Unknown</option>' + d.drawers.map(function (x) { return '<option value="' + x.drawerId + '">Drawer ' + pad2(x.drawerNumber) + '</option>'; }).join('') + '</select>' +
     '<label for="lt-seen">Last seen (aircraft / work order / location)</label><textarea class="field" id="lt-seen" maxlength="300"></textarea>' +
+    '<label for="lt-file">Photo of the drawer / empty position (required)</label><input class="field" type="file" id="lt-file" accept="image/*" capture="environment" required>' +
+    '<img id="lt-prev" class="hidden" alt="Preview of the alert photo" style="width:100%;border-radius:9px;margin-bottom:10px"><div id="lt-msg"></div>' +
     '<button class="btn danger big" id="lt-go" style="width:100%">⚠ Send Missing Tool Alert</button></form></div>';
 }
+function bindPhotoInput(inputId, prevId, msgId, cb) {
+  $(inputId).onchange = function () {
+    cb(null); var f = this.files[0]; if (!f) return;
+    if (f.size > 30 * 1024 * 1024) { toast('That photo is too large (over 30 MB).', true); this.value = ''; return; }
+    $(msgId).innerHTML = '<p class="muted">Preparing photo…</p>';
+    prepareImage(f).then(function (r) { cb(r); $(prevId).src = r.preview; $(prevId).classList.remove('hidden'); $(msgId).innerHTML = '<p class="muted">Photo ready.</p>'; })
+      .catch(function () { $(msgId).innerHTML = '<div class="alert red">This photo format could not be read. Please use the camera or a JPEG/PNG photo.</div>'; });
+  };
+}
 function bindLostForm(toolboxId, after) {
+  var prepared = null; bindPhotoInput('lt-file', 'lt-prev', 'lt-msg', function (r) { prepared = r; });
   $('lt-form').onsubmit = function (e) {
-    e.preventDefault(); var b = $('lt-go'); b.disabled = true;
-    authed('reportMissingTool', { toolboxId: toolboxId, drawerId: $('lt-drawer').value, toolDescription: $('lt-tool').value, lastSeen: $('lt-seen').value })
-      .then(function (r) { openModal('Report sent', '<div class="alert red"><b>OPEN TOOL DISCREPANCY ' + esc(r.reportId) + '</b></div><p>An alert e-mail with your name has been sent to the PCH missing-tool contacts and the report is saved in the history. Inform your supervisor now and follow the PCH lost-tool procedure.</p><div class="actionline"><button class="btn" onclick="closeModal()">OK</button></div>'); after && after(); })
-      .catch(function (err) { b.disabled = false; fail(err); });
+    e.preventDefault();
+    if (!prepared) { toast('Take a photo first – it is required.', true); return; }
+    var b = $('lt-go'); b.disabled = true; b.textContent = 'Sending…';
+    authed('reportMissingTool', { toolboxId: toolboxId, drawerId: $('lt-drawer').value, toolDescription: $('lt-tool').value, lastSeen: $('lt-seen').value, photo: prepared.photo, thumb: prepared.thumb })
+      .then(function (r) { openModal('Report sent', '<div class="alert red"><b>OPEN TOOL DISCREPANCY ' + esc(r.reportId) + '</b></div><p>An alert e-mail with your name and photo has been sent to the PCH missing-tool contacts and the report is saved in the history. Inform your supervisor now and follow the PCH lost-tool procedure.</p><p><b>When the tool is found:</b> open the app and press <b>✓ Tool found / submit solution</b> with a photo of the tool. Only the Quality Manager can close the alert.</p><div class="actionline"><button class="btn" onclick="closeModal()">OK</button></div>'); after && after(); })
+      .catch(function (err) { b.disabled = false; b.textContent = '⚠ Send Missing Tool Alert'; fail(err); });
+  };
+}
+function ltSolutionForm(id, after) {
+  openModal('Tool found / solution – ' + id, '<form id="ls-form"><label class="check"><input type="radio" name="ls" value="FOUND" checked> Tool found – photo of the tool back in its place</label>' +
+    '<label class="check"><input type="radio" name="ls" value="OTHER"> Other solution (describe it)</label>' +
+    '<label for="ls-file">Photo (required when the tool is found)</label><input class="field" type="file" id="ls-file" accept="image/*" capture="environment">' +
+    '<img id="ls-prev" class="hidden" alt="Preview of the solution photo" style="width:100%;border-radius:9px;margin-bottom:10px"><div id="ls-msg"></div>' +
+    '<label for="ls-note">Description</label><textarea class="field" id="ls-note" maxlength="500" placeholder="Where was it found / what was done"></textarea>' +
+    '<div class="banner">The discrepancy stays OPEN until the Quality Manager approves your solution.</div>' +
+    '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn" id="ls-go">Send to Quality Manager</button></div></form>');
+  var prepared = null; bindPhotoInput('ls-file', 'ls-prev', 'ls-msg', function (r) { prepared = r; });
+  $('ls-form').onsubmit = function (e) {
+    e.preventDefault(); var v = (document.querySelector('input[name=ls]:checked') || {}).value; var note = $('ls-note').value.trim();
+    if (v === 'FOUND' && !prepared) { toast('Take a photo of the found tool.', true); return; }
+    if (v === 'OTHER' && note.length < 3) { toast('Describe the solution.', true); return; }
+    var b = $('ls-go'); b.disabled = true; b.textContent = 'Sending…';
+    authed('proposeLostToolResolution', id, { outcome: v, note: note, photo: prepared ? prepared.photo : '', thumb: prepared ? prepared.thumb : '' })
+      .then(function () { closeModal(); toast('Sent to the Quality Manager for approval.'); after && after(); })
+      .catch(function (err) { b.disabled = false; b.textContent = 'Send to Quality Manager'; fail(err); });
   };
 }
 
@@ -765,7 +800,8 @@ function aDashboard(body) {
         return '<div class="item"><b>Toolbox ' + esc(s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber) + ' · Requested R' + pad2(s.proposedRevision) + '</b><p class="muted">' + esc(s.description) + ' · ' + esc(s.submittedBy) + ' · ' + fdt(s.submittedAt) + '</p><button class="btn" data-rev="' + s.submissionId + '">Review</button></div>';
       }).join('') : '<p class="muted">No pending submissions.</p>') + '</div>' +
       '<div class="panel"><h3>Employee Access</h3><div class="item"><strong>' + d.activeUsers + ' active</strong> <span class="muted">· ' + d.invitedUsers + ' awaiting approval</span></div><div class="gap"><button class="secondary" id="d-emp">Manage employees</button><button class="secondary" id="d-former">Former Employees</button></div></div>' +
-      '<div class="panel"><h3 style="color:var(--red)">Missing-tool alerts</h3><div class="muted">Alerts are e-mailed to:</div>' +
+      '<div class="panel"><h3 style="color:var(--red)">Missing-tool alerts</h3>' + (d.ltAwaitingMe ? '<div class="alert red"><b>' + d.ltAwaitingMe + ' awaiting your approval</b></div>' : '') +
+    (d.openDiscrepancies ? '<button class="btn" id="d-lost" style="margin-bottom:10px">Open lost tools (' + d.openDiscrepancies + ')</button>' : '') + '<div class="muted">Alerts are e-mailed to:</div>' +
         (d.lostToolEmails ? d.lostToolEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">No address set – alerts go to the administrators.</p>') +
         '<div class="muted" style="margin-top:10px">Updated register PDF (each approval) goes to:</div>' +
         (d.registerEmails ? d.registerEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">Administrators.</p>') +
@@ -778,6 +814,7 @@ function aDashboard(body) {
     $('d-emp').onclick = function () { adminView('employees'); };
     $('d-former').onclick = function () { adminView('employees', 'former'); };
     $('d-lost-mails').onclick = function () { adminView('settings'); };
+    if ($('d-lost')) $('d-lost').onclick = function () { adminView('lost'); };
   }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
 }
 
@@ -1105,26 +1142,40 @@ function aHistory(body) {
 
 // ---- lost tools ----
 function aLost(body) {
-  body.innerHTML = '<div class="panel"><div class="row"><div><h3>Lost Tools</h3><div class="muted">Discrepancies stay OPEN until an administrator closes them after review.</div></div><select class="field search" id="l-st" aria-label="Filter"><option value="OPEN">Open</option><option value="">All</option></select></div><div id="l-rows"></div></div>';
+  body.innerHTML = '<div class="panel"><div class="row"><div><h3>Lost Tools</h3><div class="muted">An alert stays open until the Quality Manager approves the engineer’s photo of the found tool (or other solution), or closes it with a written justification. Everything is kept in the history.</div></div><select class="field search" id="l-st" aria-label="Filter"><option value="ACTIVE">Open / awaiting decision</option><option value="">All</option></select></div><div id="l-rows"></div></div>';
   var load = function () {
     loading('l-rows');
     authed('listLostTools', $('l-st').value || null).then(function (rows) {
       $('l-rows').innerHTML = rows.length ? rows.map(function (r) {
+        var open = r.status === 'OPEN' || r.status === 'AWAITING_QM';
+        var photos = (r.hasReportPhoto || r.hasProposedPhoto) ? '<div class="grid" style="margin-top:8px">' +
+          (r.hasReportPhoto ? '<div class="drawer">' + photoHtml('lt', r.reportId, 'report', true, 'Alert photo – ' + r.reportId) + '<div class="muted">Alert photo</div></div>' : '') +
+          (r.hasProposedPhoto ? '<div class="drawer">' + photoHtml('lt', r.reportId, 'proposed', true, 'Solution photo – ' + r.reportId) + '<div class="muted">Solution photo</div></div>' : '') + '</div>' : '';
+        var acts = '';
+        if (open && r.canDecide) acts = '<div class="gap" style="margin-top:8px">' + (r.status === 'AWAITING_QM' ? '<button class="btn" data-ltd="ACCEPT" data-id="' + r.reportId + '">✓ Approve & close</button><button class="secondary" data-ltd="RETURN" data-id="' + r.reportId + '">Return to engineer</button>' : '<span class="muted">Waiting for the engineer’s photo / solution.</span>') +
+          '<button class="secondary" data-ltd="JUSTIFY" data-id="' + r.reportId + '">Close with written justification…</button></div>';
+        else if (open) acts = '<div class="muted" style="margin-top:6px">Only the Quality Manager can close this alert.</div>';
         return '<div class="item"><div class="row"><b>' + esc(r.reportId) + ' · Toolbox ' + esc(r.toolboxNumber || '') + ' ' + esc(r.toolboxLabel || '') + (r.drawerNumber ? ' · Drawer ' + pad2(r.drawerNumber) : '') + '</b>' + pill(r.status) + '</div>' +
-          '<div>' + esc(r.toolDescription) + '</div><div class="muted">Reported by ' + esc(r.reportedBy) + ' · ' + fdt(r.reportedAt) + (r.lastSeen ? ' · Last seen: ' + esc(r.lastSeen) : '') + '</div>' +
-          (r.status === 'OPEN' ? '<button class="btn" style="margin-top:8px" data-res="' + r.reportId + '">Close discrepancy…</button>' : '<div class="muted">Closed by ' + esc(r.resolvedBy) + ' · ' + fdt(r.resolvedAt) + ' · ' + esc(r.resolution) + '</div>') + '</div>'; }).join('') : '<div class="empty">No reports.</div>';
-      $('l-rows').querySelectorAll('[data-res]').forEach(function (b) { b.onclick = function () { resolveForm(b.dataset.res, load); }; });
+          '<div>' + esc(r.toolDescription) + '</div><div class="muted">Reported by ' + esc(r.reportedBy) + ' · ' + fdt(r.reportedAt) + (r.lastSeen ? ' · Last seen: ' + esc(r.lastSeen) : '') + '</div>' + photos +
+          (r.proposedAt ? '<div style="margin-top:6px"><b>Engineer’s solution</b> (' + (r.proposedOutcome === 'FOUND' ? 'tool found' : 'other solution') + ' · ' + fdt(r.proposedAt) + '): ' + esc(r.proposedNote || '—') + '</div>' : '') +
+          (r.qmNotes ? '<div class="muted">Quality Manager: ' + esc(r.qmNotes) + '</div>' : '') +
+          (open ? acts : '<div class="muted">Closed by ' + esc(r.resolvedBy) + ' · ' + fdt(r.resolvedAt) + ' · ' + esc(r.resolution) + '</div>') + '</div>';
+      }).join('') : '<div class="empty">No reports.</div>';
+      hydratePhotos($('l-rows'));
+      $('l-rows').querySelectorAll('[data-ltd]').forEach(function (b) { b.onclick = function () { ltDecisionForm(b.dataset.id, b.dataset.ltd, load); }; });
     }).catch(function (e) { $('l-rows').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
   };
   $('l-st').onchange = load; load();
 }
-function resolveForm(id, after) {
-  openModal('Close ' + id, '<form id="rs"><label class="check"><input type="radio" name="rs" value="CLOSED_FOUND"> Tool found</label><label class="check"><input type="radio" name="rs" value="CLOSED_NOT_FOUND"> Not found – lost-tool procedure completed</label>' +
-    '<label for="rs-txt">Resolution / actions taken</label><textarea class="field" id="rs-txt" required maxlength="500"></textarea><div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Close discrepancy</button></div></form>');
-  $('rs').onsubmit = function (e) {
-    e.preventDefault(); var v = (document.querySelector('input[name=rs]:checked') || {}).value;
-    if (!v) { toast('Choose an outcome.', true); return; }
-    authed('resolveLostTool', id, v, $('rs-txt').value).then(function () { closeModal(); toast('Discrepancy closed.'); after(); }).catch(fail);
+function ltDecisionForm(id, kind, after) {
+  var L = { ACCEPT: ['Approve & close ' + id, 'Notes (optional)', 'Approve & close'], RETURN: ['Return ' + id + ' to the engineer', 'What is still needed? (required)', 'Return to engineer'],
+    JUSTIFY: ['Close ' + id + ' – written justification', 'Justification (required – kept in the history and the monthly report)', 'Close alert'] }[kind];
+  openModal(L[0], '<form id="ld"><label for="ld-txt">' + L[1] + '</label><textarea class="field" id="ld-txt" maxlength="500"' + (kind === 'ACCEPT' ? '' : ' required') + '></textarea>' +
+    '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn" id="ld-go">' + L[2] + '</button></div></form>');
+  $('ld').onsubmit = function (e) {
+    e.preventDefault(); var b = $('ld-go'); b.disabled = true;
+    authed('resolveLostTool', id, kind, $('ld-txt').value).then(function () { closeModal(); toast(kind === 'RETURN' ? 'Returned to the engineer.' : 'Alert closed.'); after(); })
+      .catch(function (err) { b.disabled = false; fail(err); });
   };
 }
 
