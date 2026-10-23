@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>PCH Toolbox Control</title>
+<style>
+/* PCH Toolbox Control — production styles derived from the approved PCH_TOOLBOX_VISUAL_PROTOTYPE.html */
+:root{--navy:#142b43;--navy2:#294862;--blue:#1269bc;--bg:#f3f6fa;--page:#eaf0f5;--line:#e1e8f0;--text:#25394e;--sub:#77889b;--green:#147c55;--greenbg:#e7f4eb;--amber:#ad7019;--amberbg:#fff1dc;--red:#b42318;--redbg:#fdecea}
+*{box-sizing:border-box}html,body{margin:0}body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--page);-webkit-text-size-adjust:100%}
+button,select,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}
+:focus-visible{outline:3px solid #7fb4ea;outline-offset:2px}
+img{max-width:100%}
+.hidden{display:none!important}
+.role-quality .mgr{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- admin shell ---------- */
+.shell{min-height:100vh;display:flex}
+.sidebar{width:238px;background:var(--navy);color:#fff;padding:24px 14px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:11px;align-items:center;padding:0 8px 25px;border-bottom:1px solid #ffffff20}
+.brand-icon{background:#fff;width:46px;height:46px;display:grid;place-items:center;border-radius:10px;overflow:hidden;flex-shrink:0}
+.brand-icon img{width:42px;height:42px;object-fit:contain}
+.brand-icon.txt{background:#217ad1;color:#fff;font-size:24px;font-weight:800}
+.brand strong{letter-spacing:.06em;font-size:13px;display:block}.brand small{display:block;color:#a6c0da;font-size:10px;letter-spacing:.15em}
+.eyebrow{font-size:11px;letter-spacing:.14em;color:var(--sub);font-weight:750;text-transform:uppercase}
+.menu{display:grid;gap:5px;margin-top:14px}
+.menu button{border:0;background:none;color:#b4c5d7;text-align:left;padding:12px 13px;border-radius:9px;font-weight:650;display:flex;justify-content:space-between;align-items:center}
+.menu button.active,.menu button:hover{background:var(--navy2);color:#fff}
+.badge{background:#f0a23a;color:#1d2733;border-radius:20px;font-size:11px;padding:1px 8px;font-weight:800}
+.sidefoot{color:#9db5cc;font-size:11px;margin:26px 8px;line-height:1.6}
+.main{flex:1;padding:28px;min-width:0}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.toolbar h1{margin:4px 0 0;font-size:27px}
+.userchip{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub)}
+.viewselect{display:none;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.viewselect button{border:1px solid #d3dfeb;background:#fff;padding:9px 12px;border-radius:8px;color:#3b536e;font-weight:700;font-size:12px;white-space:nowrap}
+.viewselect button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ---------- common components ---------- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:9px;padding:11px 15px;font-weight:750}
+.btn.danger{background:var(--red)}.btn.green{background:var(--green)}
+.secondary{background:#fff;border:1px solid #d5e1ec;color:#344f68;border-radius:9px;padding:10px 13px;font-weight:700}
+.secondary.danger{color:var(--red);border-color:#f1c4c0}
+.linkbtn{background:none;border:0;color:var(--blue);font-weight:700;padding:4px}
+.muted{color:var(--sub);font-size:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.gap{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.metric{padding:18px}.metric strong{display:block;font-size:30px}.metric .muted{margin-bottom:5px}
+.green{color:var(--green)}
+.pill{display:inline-block;background:var(--greenbg);color:var(--green);font-size:10px;border-radius:30px;padding:5px 10px;font-weight:800;letter-spacing:.03em;white-space:nowrap}
+.pill.pending{background:var(--amberbg);color:var(--amber)}
+.pill.red{background:var(--redbg);color:var(--red)}
+.pill.grey{background:#edf1f5;color:#5d6f82}
+.pill.blue{background:#e6f0fb;color:var(--blue)}
+.rev{font-size:11px;color:var(--blue);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:15px}
+.drawer{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
+.drawer .row{padding:11px 2px}
+.drawer .secondary,.drawer .btn{width:100%;font-size:12px}
+.drawer .twobtn{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.photo{height:130px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(135deg,#788a9b,#36495a);color:#e8f3fc;position:relative;overflow:hidden;cursor:default}
+.photo.empty:before{content:"";position:absolute;inset:14px;border:5px solid #334757;border-radius:7px;background:repeating-linear-gradient(90deg,#acbbc9 0 13px,#5d7182 15px 32px);opacity:.35}
+.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo.has{cursor:zoom-in}
+.photo span{z-index:1;background:#132a41b8;padding:5px 8px;border-radius:5px;font-size:11px;font-weight:750}
+.photo .tag{position:absolute;left:6px;top:6px;z-index:2}
+.layout{display:grid;grid-template-columns:1fr 350px;gap:16px}
+.side{display:grid;gap:14px;align-content:start}
+.list{display:grid;gap:10px;margin-top:15px}
+.item{padding:12px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.field{width:100%;border:1px solid #d6e1eb;border-radius:9px;padding:12px;background:#fff;color:var(--text);margin:6px 0 13px}
+textarea.field{min-height:84px;resize:vertical}
+label{font-size:12px;font-weight:750;display:block}
+.check{display:flex;gap:9px;align-items:flex-start;font-weight:600;font-size:13px;margin:6px 0 12px}
+.check input{width:20px;height:20px;margin:0;flex:none}
+.banner{background:#eaf4ff;border-radius:9px;padding:12px;font-size:12px;color:#466783;line-height:1.5}
+.alert{background:#fff6e7;color:#986716;border-radius:8px;padding:10px;font-size:12px;margin-top:10px;line-height:1.5}
+.alert.red{background:var(--redbg);color:var(--red)}
+.alert.ok{background:var(--greenbg);color:var(--green)}
+h2,h3{margin:0 0 9px}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.08em;color:var(--sub);text-transform:uppercase;padding:9px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr.click{cursor:pointer}.tbl tr.click:hover td{background:#f6f9fc}
+.tablewrap{overflow-x:auto}
+.search{max-width:320px;margin:0}
+.empty{padding:28px;text-align:center;color:var(--sub);font-size:13px}
+.spinner{width:22px;height:22px;border:3px solid #cfe0f1;border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.compare .photo{height:auto;min-height:220px;aspect-ratio:4/3}
+.qrbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;display:grid;place-items:center}
+.qrbox img{width:170px;height:170px;image-rendering:pixelated}
+.qrsheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.qrcard{border:1px dashed #b9c8d6;border-radius:12px;padding:14px;text-align:center;background:#fff}
+.qrcard img{width:150px;height:150px;image-rendering:pixelated}
+.qrcard .logo{height:30px;margin-bottom:6px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.kv:last-child{border-bottom:0}.kv b{text-align:right}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;z-index:50;box-shadow:0 8px 24px #0003;max-width:92vw}
+.toast.err{background:var(--red)}
+.progress{height:8px;background:#e3ecf5;border-radius:8px;overflow:hidden;margin:10px 0}
+.progress div{height:100%;background:var(--blue);width:0;transition:width .3s}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;background:#14253db9;display:grid;place-items:center;padding:18px;z-index:20}
+.modal{background:#fff;width:min(480px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:24px}
+.modal.wide{width:min(960px,100%)}
+.modal.zoom{width:min(1100px,100%);padding:14px}
+.modal.zoom img{width:100%;height:auto;border-radius:8px;display:block}
+.actionline{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+
+/* ---------- mechanic & auditor (phone layout) ---------- */
+.mobile-wrap{display:flex;justify-content:center;min-height:100vh}
+.phone{width:100%;max-width:440px;background:#f4f7fa;display:flex;flex-direction:column;min-height:100vh}
+.phonehead{background:var(--navy);color:#fff;padding:22px 18px calc(18px)}
+.phonehead .brand{padding-bottom:16px}
+.phonehead h2{margin:16px 0 4px}
+.phonehead .sub{font-size:12px;color:#b8cbde}
+.phonebody{padding:15px;flex:1;padding-bottom:90px}
+.phone .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.phone .photo{height:110px}
+.phone .drawer{padding:7px}
+.phone .panel{padding:15px}
+.phone .btn.big{width:100%;padding:16px;font-size:16px}
+.phone .secondary.big{width:100%;padding:13px}
+.phonefooter{display:flex;justify-content:space-around;background:#fff;border-top:1px solid var(--line);padding:8px 5px calc(8px + env(safe-area-inset-bottom));position:sticky;bottom:0;z-index:5}
+.phonefooter button{background:none;border:0;font-size:11px;font-weight:750;color:#617992;padding:8px 10px;border-radius:8px;display:grid;justify-items:center;gap:2px;min-width:64px}
+.phonefooter button .ic{font-size:18px}
+.phonefooter button.active{color:var(--blue);background:#eef5fd}
+.login .field{font-size:17px}
+.codeinput{letter-spacing:10px;text-align:center;font-size:24px!important;font-weight:800}
+.report .kv{font-size:13px}
+
+@media(min-width:700px){
+  .mobile-wrap{padding:28px 12px;min-height:auto}
+  .phone{border:7px solid #263749;border-radius:32px;overflow:hidden;box-shadow:0 16px 40px #192d4325;min-height:760px}
+  .phonefooter{position:sticky}
+}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.sidebar{width:200px}.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:680px){
+  .sidebar{display:none}.main{padding:15px}.viewselect{display:flex}
+  .stats{grid-template-columns:repeat(3,1fr);gap:7px}.metric{padding:12px}.metric strong{font-size:24px}
+  .grid{grid-template-columns:repeat(2,1fr)}.toolbar h1{font-size:23px}.panel{padding:15px}
+  .compare{grid-template-columns:1fr}.hide-sm{display:none}
+}
+
+/* ---------- print ---------- */
+#print-root{display:none}
+@media print{
+  body{background:#fff}
+  body>*:not(#print-root){display:none!important}
+  #print-root{display:block;color:#000;font-size:11pt}
+  .pr-head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #142b43;padding-bottom:8px;margin-bottom:10px}
+  .pr-head img{height:46px}
+  .pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pr-cell{border:1px solid #bbb;padding:6px;break-inside:avoid}
+  .pr-cell img{width:100%;height:auto;max-height:300px;object-fit:contain}
+  .pr-limit{border:1px solid #142b43;padding:8px;margin:8px 0;font-size:9.5pt}
+  .pr-qr .qrcard{break-inside:avoid;margin-bottom:10px}
+  .pr-qr .qrsheet{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+
+</head>
+<body>
+<div id="app"><div class="spinner" role="status" aria-label="Loading"></div></div>
+<div id="overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal" id="modal">
+    <div class="row"><h3 id="modal-title">&nbsp;</h3><button class="secondary" id="modal-close" aria-label="Close">✕</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="print-root" aria-hidden="true"></div>
+<script>
+/* PCH Toolbox Control – external site. Talks to the private Google back-end through a JSON API
+   (no Google cookies are sent, so phones signed in to several Google accounts work). */
+var API_URL = 'https://script.google.com/macros/s/AKfycbzrdwJ52aN-Jr_YDuo62rOBhnGUdUMB9Ayvv0rBmLwqrELb-v0UaHkswoReR4hYRBcVlQ/exec';
+var BOOT = (function () {
+  var p = new URLSearchParams(location.search), t = p.get('t') || '', v = p.get('view') || '', s = p.get('s') || '';
+  return { publicToken: /^[0-9a-f]{64}$/.test(t) ? t : '', view: ['review', 'lost', 'pending'].indexOf(v) > -1 ? v : '',
+    submissionId: /^SUB-[0-9A-F]{12}$/.test(s) ? s : '', legacyLink: p.has('box'), badToken: !!t && !/^[0-9a-f]{64}$/.test(t) };
+})();
+var LOGO = '';
+function apiCall(fn, args) {
+  return fetch(API_URL, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args }) }).then(function (r) { if (!r.ok) throw new Error('Server unavailable (' + r.status + '). Please try again.'); return r.json(); });
+}
+window.google = { script: { run: (function mk(ok, ko) { return new Proxy({}, { get: function (_, fn) {
+  if (fn === 'withSuccessHandler') return function (f) { return mk(f, ko); };
+  if (fn === 'withFailureHandler') return function (f) { return mk(ok, f); };
+  return function () { var args = Array.prototype.slice.call(arguments);
+    apiCall(fn, args).then(function (j) { if (j && j.ok) { ok && ok(j.result); } else { ko && ko(new Error((j && j.error) || 'Unexpected error')); } })
+      .catch(function (e) { ko && ko(new Error(e && e.message ? e.message : 'Network error – check your connection.')); }); };
+} }); })() } };
+function bootStatic() {
+  var cached = null; try { cached = JSON.parse(localStorage.getItem('pchtc_assets') || 'null'); } catch (e) { }
+  var go = function (a) { LOGO = a.logo || ''; if (a.qrLib && typeof qrcode !== 'function') { try { window.qrcode = new Function(a.qrLib + '; return qrcode;')(); } catch (e) { } } start(); };
+  if (cached && cached.v === 1) { go(cached); apiCall('getAppAssets', []).then(function (j) { if (j && j.ok) { try { j.result.v = 1; localStorage.setItem('pchtc_assets', JSON.stringify(j.result)); } catch (e) { } } }); return; }
+  apiCall('getAppAssets', []).then(function (j) { var a = (j && j.ok) ? j.result : {}; a.v = 1; try { localStorage.setItem('pchtc_assets', JSON.stringify(a)); } catch (e) { } go(a); })
+    .catch(function () { go({}); });
+}
+</script>
+<script>
+/* PCH Toolbox Control — client. UI only: every permission is enforced on the server. */
+'use strict';
+var S = { token: null, user: null, view: 'dashboard', cache: {}, imgs: {}, boxes: null };
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function pad2(n) { n = Number(n || 0); return n < 10 ? '0' + n : String(n); }
+var DTF = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Brisbane', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+var DF = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Brisbane', day: '2-digit', month: '2-digit', year: 'numeric' });
+function fdt(iso) { return iso ? DTF.format(new Date(iso)) : '—'; }
+function fd(iso) { return iso ? DF.format(new Date(iso)) : '—'; }
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function uid() { try { return crypto.randomUUID(); } catch (e) { var a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); } }
+function boxName(b) { return (b.toolboxNumber ? b.toolboxNumber + ' · ' : '') + (b.label || ''); }
+var STATUS_PILL = { ACTIVE: '', TEST: 'blue', DRAFT: 'grey', ARCHIVED: 'grey', PENDING: 'pending', APPROVED: '', REJECTED: 'red', INVITED: 'pending', INACTIVE: 'grey', OPEN: 'red', CLOSED_FOUND: '', CLOSED_NOT_FOUND: 'grey', SUBMITTED: 'pending', ARCHIVED_EV: 'grey', MISSING_TOOL_REPORTED: 'red', MISSING_TOOL_CLOSED: 'grey', ALL_PRESENT: '', EXCEPTIONS: 'red' };
+var STATUS_TEXT = { ALL_PRESENT: 'ALL PRESENT', EXCEPTIONS: 'EXCEPTIONS', CLOSED_FOUND: 'CLOSED – FOUND', CLOSED_NOT_FOUND: 'CLOSED – NOT FOUND', OPEN: 'OPEN TOOL DISCREPANCY', PENDING: 'AWAITING APPROVAL', MISSING_TOOL_REPORTED: 'MISSING TOOL', MISSING_TOOL_CLOSED: 'DISCREPANCY CLOSED' };
+function evTitle(h) { return /^MISSING_TOOL/.test(h.eventType) ? (h.drawerNumber ? 'Drawer ' + pad2(h.drawerNumber) : 'Toolbox') : 'Drawer ' + pad2(h.drawerNumber) + ' · Rev ' + pad2(h.revision); }
+function pill(st) { return '<span class="pill ' + (STATUS_PILL[st] || 'grey') + '">' + esc(STATUS_TEXT[st] || st) + '</span>'; }
+
+// ---------- server calls ----------
+function api(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function (resolve, reject) {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(function (e) {
+      var m = (e && e.message) ? e.message : String(e);
+      m = m.replace(/^Error:\s*/, '');
+      if (m.indexOf('PIN_CHANGE_REQUIRED') === 0) { renderChangePin(true); return; }
+      if (m.indexOf('SESSION_EXPIRED') === 0) { if (S.token) signOutLocal('Your session has ended. Please sign in again.'); return; } // never settles: the screen has been replaced
+      reject(new Error(m));
+    })[fn].apply(null, args);
+  });
+}
+function authed(fn) { return api.apply(null, [fn, S.token].concat(Array.prototype.slice.call(arguments, 1))); }
+
+function toast(msg, err) {
+  var t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg; t.setAttribute('role', 'status');
+  document.body.appendChild(t); setTimeout(function () { t.remove(); }, err ? 6000 : 3500);
+}
+function fail(e) { toast(e && e.message ? e.message : String(e), true); }
+function loading(el) { (typeof el === 'string' ? $(el) : el).innerHTML = '<div class="spinner" role="status" aria-label="Loading"></div>'; }
+
+// ---------- modal ----------
+function openModal(title, html, cls) {
+  $('modal').className = 'modal' + (cls ? ' ' + cls : '');
+  $('modal-title').textContent = title; $('modal-body').innerHTML = html;
+  $('overlay').classList.remove('hidden'); setTimeout(function () { $('modal-close').focus(); }, 30);
+}
+function closeModal() { $('overlay').classList.add('hidden'); $('modal-body').innerHTML = ''; }
+$('modal-close').onclick = closeModal;
+$('overlay').addEventListener('click', function (e) { if (e.target === $('overlay')) closeModal(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('overlay').classList.contains('hidden')) closeModal(); });
+
+// ---------- branding ----------
+function brand(sub, light) {
+  var icon = LOGO ? '<div class="brand-icon"><img src="' + LOGO + '" alt="Pacific Crown Helicopters logo"></div>' : '<div class="brand-icon txt">P</div>';
+  return '<div class="brand">' + icon + '<div><strong>PACIFIC CROWN</strong><small>' + esc(sub || 'HELICOPTERS') + '</small></div></div>';
+}
+
+// ---------- images (private proxy) ----------
+function imgKey(kind, a, size) { return kind + ':' + a + ':' + size; }
+function fetchImage(kind, a, b, size) {
+  var k = imgKey(kind, kind === 'pub' ? b : a, size);
+  if (S.imgs[k]) return Promise.resolve(S.imgs[k]);
+  var p;
+  if (kind === 'pub') p = api('getPublicDrawerImage', a, b, size);
+  else if (kind === 'drawer') p = authed('getDrawerImage', a, size);
+  else p = authed('getSubmissionImage', a, size);
+  return p.then(function (r) { S.imgs[k] = r.dataUrl; return r.dataUrl; });
+}
+/** <div class="photo" data-img="kind|a|b">; thumbnails load lazily when visible */
+function photoHtml(kind, a, b, has, label, extraTag) {
+  if (!has) return '<div class="photo empty"><span>' + esc(label || 'No approved photo') + '</span>' + (extraTag || '') + '</div>';
+  return '<div class="photo has" tabindex="0" role="button" aria-label="Open photo: ' + esc(label || '') + '" data-img="' + kind + '|' + esc(a) + '|' + esc(b || '') + '" data-label="' + esc(label || '') + '"><span>Loading…</span>' + (extraTag || '') + '</div>';
+}
+var IO = ('IntersectionObserver' in window) ? new IntersectionObserver(function (es) {
+  es.forEach(function (en) { if (en.isIntersecting) { IO.unobserve(en.target); loadThumb(en.target); } });
+}, { rootMargin: '200px' }) : null;
+function hydratePhotos(root) {
+  (root || document).querySelectorAll('.photo[data-img]').forEach(function (el) {
+    if (el.dataset.bound) return; el.dataset.bound = '1';
+    if (IO) IO.observe(el); else loadThumb(el);
+    var open = function () { zoomPhoto(el); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  });
+}
+function loadThumb(el) {
+  var p = el.dataset.img.split('|');
+  fetchImage(p[0], p[1], p[2], 'thumb').then(function (url) {
+    var img = new Image(); img.alt = el.dataset.label || 'Drawer photo'; img.src = url;
+    var sp = el.querySelector('span'); if (sp) sp.remove(); el.insertBefore(img, el.firstChild);
+  }).catch(function () { var sp = el.querySelector('span'); if (sp) sp.textContent = 'Photo unavailable'; });
+}
+function zoomPhoto(el) {
+  var p = el.dataset.img.split('|');
+  openModal(el.dataset.label || 'Photo', '<div class="spinner"></div><p class="muted">Photos are displayed by PCH Toolbox Control only. No Google Drive links are used.</p>', 'zoom');
+  fetchImage(p[0], p[1], p[2], 'full').then(function (url) {
+    $('modal-body').innerHTML = '<img src="' + url + '" alt="' + esc(el.dataset.label || 'Drawer photo') + '"><p class="muted">Tap outside or press ✕ to close.</p>';
+  }).catch(function (e) { $('modal-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---------- start ----------
+function start() {
+  if (BOOT.publicToken) return renderAuditor(BOOT.publicToken);
+  if (BOOT.legacyLink || BOOT.badToken) return renderNotice('This QR code is no longer valid', 'This link format has been replaced. Please contact the PCH tool controller for the current toolbox QR code.');
+  S.token = store('pchtc_session');
+  if (!S.token) return renderLogin();
+  api('getMe', S.token).then(function (u) { S.user = u; route(); }).catch(function () { store('pchtc_session', null); renderLogin(); });
+}
+function route() {
+  if (S.user.mustChangePin) return renderChangePin(true);
+  document.body.classList.toggle('role-quality', S.user.role === 'QUALITY');
+  if (S.user.role === 'ADMIN' || S.user.role === 'QUALITY') {
+    var v = BOOT.view === 'review' || BOOT.view === 'pending' ? 'pending' : BOOT.view === 'lost' ? 'lost' : 'dashboard';
+    renderAdminShell(v);
+    if (BOOT.view === 'review' && BOOT.submissionId) setTimeout(function () { openReview(BOOT.submissionId); }, 400);
+    BOOT.view = ''; BOOT.submissionId = '';
+  } else renderMechanic();
+}
+function signOutLocal(msg) { store('pchtc_session', null); S.token = null; S.user = null; S.imgs = {}; closeModal(); renderLogin(msg); }
+function signOut() { var t = S.token; signOutLocal('You have signed out.'); if (t) api('logout', t).catch(function () { }); }
+
+function renderNotice(title, text) {
+  $('app').innerHTML = '<div class="mobile-wrap"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') + '<h2>' + esc(title) + '</h2></div><div class="phonebody"><div class="panel"><p>' + esc(text) + '</p></div></div></div></div>';
+}
+
+// ================= LOGIN (one-time e-mail code) =================
+function renderLogin(msg) {
+  $('app').innerHTML = '<div class="mobile-wrap login"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') +
+    '<h2>Sign in</h2><div class="sub">PCH Toolbox Control · authorised staff only</div></div><div class="phonebody">' +
+    (msg ? '<div class="alert" role="status">' + esc(msg) + '</div>' : '') +
+    '<div class="panel" style="margin-top:12px" id="pinpanel"><form id="f-pin" autocomplete="on"><label for="li-user">Login name (your surname)</label>' +
+    '<input class="field" id="li-user" name="username" autocomplete="username" autocapitalize="none" required placeholder="e.g. manhaes">' +
+    '<label for="li-pin">PIN</label><input class="field codeinput" id="li-pin" name="password" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" required>' +
+    '<button class="btn big" type="submit" id="li-pgo" style="width:100%">Sign in</button></form>' +
+    '<button class="linkbtn" type="button" id="li-admin" style="margin-top:12px">Administrator sign-in (e-mail code) →</button></div>' +
+    '<div class="panel hidden" style="margin-top:12px" id="loginpanel"><div class="eyebrow" style="margin-bottom:8px">Administrator</div><form id="f-email"><label for="li-email">Administrator e-mail</label>' +
+    '<input class="field" id="li-email" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com">' +
+    '<button class="btn big" type="submit" id="li-send">Send sign-in code</button></form>' +
+    '<form id="f-code" class="hidden" style="margin-top:14px"><div class="banner" id="li-msg"></div><label for="li-code" style="margin-top:12px">6-digit code</label>' +
+    '<input class="field codeinput" id="li-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>' +
+    '<button class="btn big" type="submit" id="li-go">Sign in</button><button class="linkbtn" type="button" id="li-back" style="margin-top:10px">Use a different e-mail</button></form>' +
+    '<button class="linkbtn" type="button" id="li-mech" style="margin-top:12px">← Mechanic sign-in (PIN)</button></div>' +
+    '<p class="muted" style="margin-top:14px;line-height:1.6">Accounts and PINs are issued only by a PCH administrator. Tip: let your phone save your PIN — it can then fill it in with your fingerprint or Face ID. Auditors: scan the QR code on the toolbox — no sign-in required.</p>' +
+    '</div></div></div>';
+  $('f-email').onsubmit = function (e) {
+    e.preventDefault(); var b = $('li-send'); b.disabled = true; b.textContent = 'Sending…';
+    api('requestLoginCode', $('li-email').value).then(function (r) {
+      $('li-msg').textContent = r.message; $('f-code').classList.remove('hidden'); $('f-email').classList.add('hidden'); $('li-code').focus();
+    }).catch(fail).then(function () { b.disabled = false; b.textContent = 'Send sign-in code'; });
+  };
+  $('li-back').onclick = function () { $('f-code').classList.add('hidden'); $('f-email').classList.remove('hidden'); };
+  $('li-admin').onclick = function () { $('pinpanel').classList.add('hidden'); $('loginpanel').classList.remove('hidden'); $('li-email').focus(); };
+  $('li-mech').onclick = function () { $('loginpanel').classList.add('hidden'); $('pinpanel').classList.remove('hidden'); };
+  $('f-pin').onsubmit = function (e) {
+    e.preventDefault(); var b = $('li-pgo'); b.disabled = true; b.textContent = 'Checking…'; var pin = $('li-pin').value;
+    api('loginWithPin', $('li-user').value, pin).then(function (r) {
+      S.token = r.token; S.user = r.user; S.tmpPin = pin; store('pchtc_session', r.token); route();
+    }).catch(function (e) { fail(e); b.disabled = false; b.textContent = 'Sign in'; $('li-pin').value = ''; });
+  };
+  $('f-code').onsubmit = function (e) {
+    e.preventDefault(); var b = $('li-go'); b.disabled = true; b.textContent = 'Checking…';
+    api('verifyLoginCode', $('li-email').value, $('li-code').value).then(function (r) {
+      S.token = r.token; S.user = r.user; store('pchtc_session', r.token); route();
+    }).catch(function (e) { fail(e); b.disabled = false; b.textContent = 'Sign in'; });
+  };
+}
+
+// ================= AUDITOR QR VIEW (public, read-only) =================
+function renderAuditor(tok) {
+  $('app').innerHTML = '<div class="mobile-wrap"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL REGISTER') +
+    '<h2 id="au-title">Toolbox</h2><div class="sub">Read-only inspection reference</div></div><div class="phonebody" id="au-body"><div class="spinner"></div></div></div></div>';
+  api('getPublicToolboxSnapshot', tok).then(function (s) {
+    if (!s.ok) { $('au-title').textContent = 'QR code not active'; $('au-body').innerHTML = '<div class="panel"><p>' + esc(s.message) + '</p></div>'; return; }
+    $('au-title').textContent = 'Toolbox ' + (s.toolboxNumber || '') + (s.label ? ' · ' + s.label : '');
+    var h = '<div class="banner"><b>Approved photo register — not a live physical tool inventory verification.</b> Photo register — read-only.</div>';
+    if (s.isTest) h += '<div class="alert">TEST / SIMULATION toolbox — not a real register.</div>';
+    if (s.openDiscrepancy) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b> recorded for this toolbox. Refer to the PCH tool controller.</div>';
+    h += '<div class="panel" style="margin-top:12px"><div class="row"><strong>Register Information</strong><span class="pill">CURRENT</span></div><div class="report">' +
+      kv('Organisation', s.company) + kv('Toolbox ID', s.toolboxNumber || '—') + kv('Toolbox', s.label) +
+      kv('Register revision', 'REV ' + pad2(s.documentRevision)) + kv('Drawers', pad2(s.drawers.length)) +
+      kv('Last approved update', fdt(s.approvedAt)) + kv('Published status', 'Approved only') +
+      kv('Latest documented tool check', s.lastCheck ? fdt(s.lastCheck.checkedAt) + ' · ' + (STATUS_TEXT[s.lastCheck.result] || s.lastCheck.result) : 'None recorded') + '</div></div>';
+    h += '<h3 style="margin:20px 0 0">Approved Drawer Photos</h3><div class="grid">' + s.drawers.map(function (d) {
+      var lab = 'Drawer ' + pad2(d.drawerNumber) + ' · Rev ' + pad2(d.approvedRevision);
+      return '<div class="drawer">' + photoHtml('pub', tok, d.drawerNumber, d.hasPhoto, lab) + '<div class="row"><strong>Drawer ' + pad2(d.drawerNumber) + '</strong><span class="rev">R' + pad2(d.approvedRevision) + '</span></div>' +
+        '<div class="muted" style="padding:0 2px 6px">' + (d.approvedAt ? 'Approved ' + fd(d.approvedAt) : 'No approved photo yet') + '</div></div>';
+    }).join('') + '</div>';
+    h += '<button class="btn big" id="au-report" style="margin-top:16px;width:100%">View Full Register Report</button>';
+    if (s.history.length) h += '<div class="panel" style="margin-top:14px"><strong>Published history</strong>' + s.history.map(function (x) {
+      return '<div class="kv"><span>' + fdt(x.occurredAt) + '</span><b>Drawer ' + pad2(x.drawerNumber) + ' → Rev ' + pad2(x.revision) + '</b></div>'; }).join('') + '</div>';
+    h += '<div class="banner" style="margin-top:12px">Photos show the approved inventory reference only. They do not certify a physical toolbox check. No Google Drive links are displayed.</div>';
+    $('au-body').innerHTML = h; hydratePhotos($('au-body'));
+    $('au-report').onclick = function () { printRegister(null, tok); };
+  }).catch(function (e) { $('au-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+function kv(k, v) { return '<div class="kv"><span>' + esc(k) + '</span><b>' + esc(v) + '</b></div>'; }
+
+// ================= PRINTABLE REGISTER =================
+function printRegister(toolboxId, publicToken) {
+  openModal('Full Register Report', '<div class="spinner"></div><p class="muted" id="pr-status">Preparing approved photographs…</p>');
+  var p = publicToken ? api('getPublicRegisterReport', publicToken) : authed('getRegisterReport', toolboxId);
+  p.then(function (r) {
+    var jobs = r.drawers.map(function (d) {
+      if (!d.hasPhoto) return Promise.resolve(null);
+      return (publicToken ? fetchImage('pub', publicToken, d.drawerNumber, 'full') : fetchImage('drawer', d.drawerId, '', 'full')).catch(function () { return null; });
+    });
+    return Promise.all(jobs).then(function (imgs) {
+      var html = '<div class="pr-head"><div><div style="font-size:9pt;letter-spacing:.12em">' + esc(r.company.toUpperCase()) + ' · TOOL CONTROL</div><h2 style="margin:4px 0">Toolbox Photo Register — Toolbox ' + esc(r.toolboxNumber || '') + ' ' + esc(r.label) + '</h2></div>' + (LOGO ? '<img src="' + LOGO + '" alt="">' : '') + '</div>' +
+        '<table style="width:100%;font-size:10pt"><tr><td>Report ID: <b>' + esc(r.reportId) + '</b></td><td>Generated: <b>' + fdt(r.generatedAt) + ' (Brisbane)</b></td></tr>' +
+        '<tr><td>Register (document) revision: <b>REV ' + pad2(r.documentRevision) + '</b></td><td>Last approved update: <b>' + fdt(r.approvedAt) + '</b></td></tr>' +
+        '<tr><td>Latest documented tool check: <b>' + (r.lastCheck ? fdt(r.lastCheck.checkedAt) + ' – ' + (STATUS_TEXT[r.lastCheck.result] || r.lastCheck.result) : 'None recorded') + '</b></td><td>Open tool discrepancy: <b>' + (r.openDiscrepancy ? 'YES' : 'No') + '</b></td></tr></table>' +
+        (r.isTest ? '<p><b>TEST / SIMULATION – not a real register.</b></p>' : '') +
+        '<div class="pr-limit">' + esc(r.limitation) + '</div><div class="pr-grid">' + r.drawers.map(function (d, i) {
+          return '<div class="pr-cell"><b>Drawer ' + pad2(d.drawerNumber) + ' – Rev ' + pad2(d.approvedRevision) + '</b> <span style="font-size:9pt">approved ' + fdt(d.approvedAt) + '</span>' +
+            (imgs[i] ? '<img src="' + imgs[i] + '" alt="">' : '<p style="font-size:9pt">No approved photo.</p>') + '</div>';
+        }).join('') + '</div><p style="font-size:8.5pt;margin-top:10px">Generated by PCH Toolbox Control. Photo register only.</p>';
+      $('print-root').innerHTML = html;
+      $('modal-body').innerHTML = '<div class="report">' + kv('Report ID', r.reportId) + kv('Generated', fdt(r.generatedAt)) + kv('Register revision', 'REV ' + pad2(r.documentRevision)) +
+        r.drawers.map(function (d) { return kv('Drawer ' + pad2(d.drawerNumber), 'Rev ' + pad2(d.approvedRevision) + (d.hasPhoto ? '' : ' (no photo)')); }).join('') + '</div>' +
+        '<p class="muted">' + esc(r.limitation) + '</p><div class="actionline"><button class="btn" id="pr-go">Print / Save as PDF</button></div>';
+      $('pr-go').onclick = function () { printWhenReady(); };
+    });
+  }).catch(function (e) { $('modal-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ================= MECHANIC MOBILE =================
+function renderMechanic() {
+  S.mtab = S.mtab || 'home';
+  $('app').innerHTML = '<div class="mobile-wrap"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') +
+    '<h2 id="m-title">My Toolbox</h2><div class="sub" id="m-sub">' + esc(S.user.displayName) + '</div></div>' +
+    '<div class="phonebody" id="m-body"><div class="spinner"></div></div>' +
+    '<nav class="phonefooter" aria-label="Main">' +
+    [['home', '⌂', 'Home'], ['drawers', '▦', 'Drawers'], ['history', '◷', 'History'], ['report', '⚑', 'Report']].map(function (t) {
+      return '<button data-mt="' + t[0] + '" class="' + (S.mtab === t[0] ? 'active' : '') + '"><span class="ic" aria-hidden="true">' + t[1] + '</span>' + t[2] + '</button>'; }).join('') +
+    '</nav></div></div>';
+  document.querySelectorAll('[data-mt]').forEach(function (b) { b.onclick = function () { S.mtab = b.dataset.mt; document.querySelectorAll('[data-mt]').forEach(function (x) { x.classList.toggle('active', x === b); }); mechTab(); }; });
+  authed('listMyToolboxes').then(function (list) {
+    S.boxes = list;
+    if (!list.length) { $('m-body').innerHTML = '<div class="panel"><p>No toolbox is assigned to you yet. Please contact the PCH administrator.</p></div>' + signOutBtn(); bindSignOut(); return; }
+    var saved = store('pchtc_box');
+    S.boxId = list.some(function (b) { return b.toolboxId === saved; }) ? saved : list[0].toolboxId;
+    mechTab();
+  }).catch(function (e) { $('m-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>' + signOutBtn(); bindSignOut(); });
+}
+function signOutBtn() { return '<button class="secondary big" id="signout" style="margin-top:18px">Sign out</button><button class="linkbtn" id="chgpin" style="margin-top:8px">Change my PIN</button>'; }
+function bindSignOut() { if ($('signout')) $('signout').onclick = signOut; if ($('chgpin')) $('chgpin').onclick = function () { renderChangePin(false); }; }
+
+// ---------- create / change personal PIN ----------
+function renderChangePin(required) {
+  closeModal();
+  $('app').innerHTML = '<div class="mobile-wrap login"><div class="phone"><div class="phonehead">' + brand('TOOL CONTROL') +
+    '<h2>' + (required ? 'Create your PIN' : 'Change my PIN') + '</h2><div class="sub">' + esc(S.user ? S.user.displayName : '') + '</div></div><div class="phonebody">' +
+    (required ? '<div class="banner">You signed in with a temporary PIN. Create your own personal PIN (4–6 numbers). Do not share it — every photo, check and alert is recorded under your name.</div>' : '') +
+    '<div class="panel" style="margin-top:12px"><form id="f-cp" autocomplete="on">' +
+    (S.tmpPin && required ? '' : '<label for="cp-cur">Current PIN</label><input class="field codeinput" id="cp-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required>') +
+    '<label for="cp-new">New PIN (4–6 numbers)</label><input class="field codeinput" id="cp-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required>' +
+    '<label for="cp-new2">Repeat new PIN</label><input class="field codeinput" id="cp-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required>' +
+    '<p class="muted">Not allowed: repeated numbers (1111) or simple sequences (1234).</p>' +
+    '<button class="btn big" id="cp-go" style="width:100%">Save my PIN</button></form>' + (required ? '<button class="linkbtn" id="cp-out" style="margin-top:10px">Sign out</button>' : '<button class="linkbtn" id="cp-cancel" style="margin-top:10px">Cancel</button>') + '</div></div></div></div>';
+  if ($('cp-cancel')) $('cp-cancel').onclick = function () { route(); };
+  if ($('cp-out')) $('cp-out').onclick = signOut;
+  $('f-cp').onsubmit = function (e) {
+    e.preventDefault();
+    if ($('cp-new').value !== $('cp-new2').value) { toast('The two new PINs do not match.', true); return; }
+    var b = $('cp-go'); b.disabled = true;
+    api('changeMyPin', S.token, S.tmpPin && required ? S.tmpPin : $('cp-cur').value, $('cp-new').value).then(function () {
+      S.tmpPin = null; if (S.user) S.user.mustChangePin = false; toast('Your PIN has been saved.'); route();
+    }).catch(function (err) { b.disabled = false; fail(err); });
+  };
+}
+function boxSelect() {
+  if (!S.boxes || S.boxes.length < 2) return '';
+  return '<label for="m-box">Toolbox</label><select class="field" id="m-box">' + S.boxes.map(function (b) { return '<option value="' + b.toolboxId + '"' + (b.toolboxId === S.boxId ? ' selected' : '') + '>' + esc(boxName(b)) + '</option>'; }).join('') + '</select>';
+}
+function bindBoxSelect() { if ($('m-box')) $('m-box').onchange = function () { S.boxId = this.value; store('pchtc_box', S.boxId); mechTab(); }; }
+
+function mechTab() {
+  var body = $('m-body'); loading(body);
+  if (S.mtab === 'history') return mechHistory();
+  if (S.mtab === 'report') return mechReport();
+  authed('getToolboxDetail', S.boxId).then(function (d) {
+    S.detail = d;
+    $('m-title').textContent = S.mtab === 'drawers' ? 'My Drawers' : 'My Toolbox';
+    $('m-sub').textContent = (d.toolboxNumber || '') + ' · ' + d.label + ' · ' + S.user.displayName;
+    var h = boxSelect();
+    if (S.mtab === 'home') {
+      h += '<div class="panel"><div class="row"><strong>Toolbox ' + esc(d.toolboxNumber || '') + '</strong>' + pill(d.status) + '</div>' +
+        '<p class="muted">' + d.drawerCount + ' registered drawers · Register REV ' + pad2(d.documentRevision) + ' · ' + d.withPhoto + ' with approved photo</p>' +
+        (d.lastCheck ? '<p class="muted">Last check: ' + fdt(d.lastCheck.checkedAt) + ' · ' + (STATUS_TEXT[d.lastCheck.result] || d.lastCheck.result) + '</p>' : '<p class="muted">No toolbox check recorded yet.</p>') + '</div>';
+      if (d.openReports.length) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b><br>' + d.openReports.map(function (r) { return esc(r.reportId + ' · ' + r.toolDescription); }).join('<br>') + '</div>';
+      if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 Update Drawer Photo</button>';
+      h += '<button class="btn danger big" id="m-alert" style="margin-top:9px">⚠ Missing Tool Alert</button>' +
+        '<button class="secondary big" id="m-check" style="margin-top:9px">✓ Record Toolbox Check</button>' +
+        '<button class="secondary big" id="m-hist" style="margin-top:9px">View My History</button>';
+    }
+    h += '<h3 style="margin:20px 0 0">My Drawers</h3><div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, false); }).join('') + '</div>';
+    if (S.mtab === 'home') h += signOutBtn();
+    $('m-body').innerHTML = h; hydratePhotos($('m-body')); bindBoxSelect(); bindSignOut(); bindDrawerButtons($('m-body'));
+    if ($('m-update')) $('m-update').onclick = function () { openUpdate(null); };
+    if ($('m-alert')) $('m-alert').onclick = function () { openModal('⚠ Missing Tool Alert', lostFormHtml(d)); bindLostForm(d.toolboxId, mechTab); };
+    if ($('m-check')) $('m-check').onclick = function () { S.mtab = 'report'; document.querySelector('[data-mt=report]').click(); };
+    if ($('m-hist')) $('m-hist').onclick = function () { document.querySelector('[data-mt=history]').click(); };
+  }).catch(function (e) { $('m-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>' + signOutBtn(); bindSignOut(); });
+}
+
+function drawerCard(x, canSubmit, admin) {
+  var lab = 'Drawer ' + pad2(x.drawerNumber) + ' · Rev ' + pad2(x.approvedRevision);
+  var tag = x.pending && x.pending.length ? '<span class="pill pending tag">' + (admin ? x.pending.length + ' PENDING' : 'AWAITING APPROVAL') + '</span>' : '';
+  return '<div class="drawer">' + photoHtml('drawer', x.drawerId, '', x.hasPhoto, x.hasPhoto ? lab : 'DRAWER ' + pad2(x.drawerNumber) + ' · NO PHOTO', tag) +
+    '<div class="row"><strong>Drawer ' + pad2(x.drawerNumber) + '</strong><span class="rev">R' + pad2(x.approvedRevision) + '</span></div>' +
+    (canSubmit ? '<button class="secondary" data-upd="' + x.drawerId + '">' + (admin && !x.hasPhoto ? 'Upload baseline' : 'Update Photo') + '</button>' : '') + '</div>';
+}
+function bindDrawerButtons(root) { root.querySelectorAll('[data-upd]').forEach(function (b) { b.onclick = function () { openUpdate(b.dataset.upd); }; }); }
+
+// ---------- camera upload flow ----------
+function openUpdate(drawerId) {
+  var d = S.detail; if (!d) return;
+  var key = uid();
+  openModal('Update Drawer Photo', '<p class="muted">Request a new revision. The approved photo stays visible until an administrator approves your photo.</p>' +
+    '<form id="up-form"><label for="up-drawer">Drawer</label><select class="field" id="up-drawer">' + d.drawers.map(function (x) {
+      return '<option value="' + x.drawerId + '"' + (x.drawerId === drawerId ? ' selected' : '') + '>Drawer ' + pad2(x.drawerNumber) + ' · R' + pad2(x.approvedRevision) + '</option>'; }).join('') + '</select>' +
+    '<label for="up-file">New photo (camera or gallery)</label><input class="field" type="file" id="up-file" accept="image/*" capture="environment" required>' +
+    '<img id="up-prev" class="hidden" alt="Preview of the new drawer photo" style="width:100%;border-radius:9px;margin-bottom:10px">' +
+    '<label for="up-note">Change description</label><textarea class="field" id="up-note" required maxlength="500" placeholder="Describe added, removed or repositioned tools (include tool ID / P/N if any)"></textarea>' +
+    '<div class="banner">Submitted as <b>' + esc(S.user.displayName) + '</b>. Status after upload: <b>PENDING APPROVAL</b>. The public QR view will not change until approval.</div>' +
+    '<div class="progress hidden" id="up-prog"><div></div></div><div id="up-msg"></div>' +
+    '<button class="btn big" id="up-go" style="width:100%;margin-top:15px">Submit Revision Request</button></form>');
+  var prepared = null;
+  $('up-file').onchange = function () {
+    prepared = null; var f = this.files[0]; if (!f) return;
+    if (!/^image\//.test(f.type) && !/\.(jpe?g|png|heic|heif|webp)$/i.test(f.name)) { toast('Please choose a photo.', true); this.value = ''; return; }
+    if (f.size > 30 * 1024 * 1024) { toast('That photo is too large (over 30 MB).', true); this.value = ''; return; }
+    $('up-msg').innerHTML = '<p class="muted">Preparing photo…</p>';
+    prepareImage(f).then(function (r) { prepared = r; $('up-prev').src = r.preview; $('up-prev').classList.remove('hidden'); $('up-msg').innerHTML = '<p class="muted">Photo ready (' + Math.round(r.photo.length * 0.75 / 1024) + ' KB).</p>'; })
+      .catch(function () { $('up-msg').innerHTML = '<div class="alert red">This photo format could not be read. Please use the camera or a JPEG/PNG photo.</div>'; });
+  };
+  $('up-form').onsubmit = function (e) {
+    e.preventDefault();
+    if (!prepared) { toast('Take or choose a photo first.', true); return; }
+    var note = $('up-note').value.trim(); if (note.length < 3) { toast('Please describe what changed.', true); return; }
+    var btn = $('up-go'); btn.disabled = true; btn.textContent = 'Uploading…';
+    $('up-prog').classList.remove('hidden'); var bar = $('up-prog').firstChild; bar.style.width = '35%';
+    var t = setInterval(function () { var w = parseFloat(bar.style.width); if (w < 90) bar.style.width = (w + 5) + '%'; }, 400);
+    authed('submitDrawerPhoto', { toolboxId: d.toolboxId, drawerId: $('up-drawer').value, description: note, photo: prepared.photo, thumb: prepared.thumb, idempotencyKey: key })
+      .then(function (r) {
+        clearInterval(t); bar.style.width = '100%';
+        $('modal-body').innerHTML = '<div class="alert ok" role="status"><b>Saved — awaiting approval.</b></div><div class="report" style="margin-top:10px">' +
+          kv('Submission ID', r.submissionId) + kv('Status', 'PENDING') + kv('Proposed revision', 'Rev ' + pad2(r.proposedRevision)) + '</div>' +
+          '<p class="muted">An administrator has been notified. You will receive an e-mail when it is approved or rejected.</p><div class="actionline"><button class="btn" id="up-done">Done</button></div>';
+        $('up-done').onclick = function () { closeModal(); if (S.user.role !== 'MECHANIC') adminView(S.view, S.view === 'toolbox' ? d.toolboxId : undefined); else mechTab(); };
+      }).catch(function (err) { clearInterval(t); btn.disabled = false; btn.textContent = 'Submit Revision Request'; $('up-prog').classList.add('hidden'); fail(err); });
+  };
+}
+
+/** Resize on the device: longest edge 1600 px (JPEG 0.8) + 400 px thumbnail (JPEG 0.7). */
+function prepareImage(file) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(file); var img = new Image();
+    img.onload = function () {
+      try {
+        var out = function (max, q) { var s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)); var c = document.createElement('canvas');
+          c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); };
+        var full = out(1600, 0.8), th = out(400, 0.7);
+        URL.revokeObjectURL(url);
+        resolve({ preview: th, photo: full.split(',')[1], thumb: th.split(',')[1] });
+      } catch (e) { reject(e); }
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+    img.src = url;
+  });
+}
+
+function mechHistory() {
+  $('m-title').textContent = 'My History';
+  Promise.all([authed('listSubmissions', {}), authed('getRevisionHistory', S.boxId), authed('listLostTools', null)]).then(function (r) {
+    var subs = r[0], hist = r[1], lost = r[2].filter(function (x) { return x.toolboxId === S.boxId; });
+    var h = boxSelect() + '<div class="panel"><strong>My submissions</strong>' + (subs.length ? subs.map(function (s) {
+      return '<div class="item"><div class="row"><b>Toolbox ' + esc(s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber) + '</b>' + pill(s.status) + '</div>' +
+        '<div class="muted">' + fdt(s.submittedAt) + ' · ' + esc(s.submissionId) + (s.status === 'APPROVED' ? ' · Approved as Rev ' + pad2(s.approvedRevision) : ' · Requested Rev ' + pad2(s.proposedRevision)) + '</div>' +
+        '<div style="font-size:13px;margin-top:4px">' + esc(s.description) + '</div>' + (s.reviewNotes ? '<div class="muted">' + (s.status === 'REJECTED' ? 'Reason: ' : 'Notes: ') + esc(s.reviewNotes) + '</div>' : '') + '</div>';
+    }).join('') : '<p class="muted">No submissions yet.</p>') + '</div>' +
+      '<div class="panel" style="margin-top:12px"><strong>Approved revisions – this toolbox</strong>' + (hist.filter(function (x) { return x.eventType === 'APPROVED'; }).slice(0, 30).map(function (x) {
+        return '<div class="kv"><span>' + fdt(x.occurredAt) + '</span><b>Drawer ' + pad2(x.drawerNumber) + ' → Rev ' + pad2(x.revision) + '</b></div>'; }).join('') || '<p class="muted">None yet.</p>') + '</div>' +
+      '<div class="panel" style="margin-top:12px"><strong>Missing tool reports – this toolbox</strong>' + (lost.map(function (x) {
+        return '<div class="item"><div class="row"><b>' + esc(x.reportId) + '</b>' + pill(x.status) + '</div><div style="font-size:13px">' + esc(x.toolDescription) + '</div><div class="muted">Reported by ' + esc(x.reportedBy) + ' · ' + fdt(x.reportedAt) + (x.resolution ? ' · ' + esc(x.resolution) : '') + '</div></div>'; }).join('') || '<p class="muted">None.</p>') + '</div>';
+    $('m-body').innerHTML = h; bindBoxSelect();
+  }).catch(function (e) { $('m-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+function mechReport() {
+  $('m-title').textContent = 'Check & Report';
+  authed('getToolboxDetail', S.boxId).then(function (d) {
+    S.detail = d;
+    $('m-body').innerHTML = boxSelect() + checkFormHtml() + lostFormHtml(d);
+    bindBoxSelect(); bindCheckForm(d.toolboxId, mechTab); bindLostForm(d.toolboxId, mechTab);
+  }).catch(function (e) { $('m-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+function checkFormHtml() {
+  return '<div class="panel"><h3>Toolbox Check</h3><p class="muted">Record a physical check of this toolbox. A photo register alone is not a tool check.</p>' +
+    '<form id="ck-form"><label class="check"><input type="radio" name="ck" value="ALL_PRESENT"> All tools present and in their positions</label>' +
+    '<label class="check"><input type="radio" name="ck" value="EXCEPTIONS"> Exceptions found</label>' +
+    '<label for="ck-exc">Exceptions (required if found)</label><textarea class="field" id="ck-exc" maxlength="500"></textarea>' +
+    '<label for="ck-rem">Remarks / aircraft / work order (optional)</label><input class="field" id="ck-rem" maxlength="500">' +
+    '<button class="btn big" id="ck-go" style="width:100%">Record Check</button></form></div>';
+}
+function bindCheckForm(toolboxId, after) {
+  $('ck-form').onsubmit = function (e) {
+    e.preventDefault(); var v = (document.querySelector('input[name=ck]:checked') || {}).value;
+    if (!v) { toast('Choose a check result.', true); return; }
+    var b = $('ck-go'); b.disabled = true;
+    authed('recordToolCheck', { toolboxId: toolboxId, result: v, exceptions: $('ck-exc').value, remarks: $('ck-rem').value })
+      .then(function (r) { toast('Check recorded ' + fdt(r.checkedAt) + '.'); if (v === 'EXCEPTIONS') toast('If a tool is missing, also submit a missing-tool report.'); after && after(); })
+      .catch(function (err) { b.disabled = false; fail(err); });
+  };
+}
+function lostFormHtml(d) {
+  return '<div class="panel" style="margin-top:12px"><h3 style="color:var(--red)">Report Missing Tool</h3><p class="muted">Sends an immediate e-mail alert (with your name) to the PCH missing-tool contacts and records an OPEN TOOL DISCREPANCY in the history.</p>' +
+    '<form id="lt-form"><label for="lt-tool">Missing tool</label><input class="field" id="lt-tool" required maxlength="300" placeholder="e.g. 10 mm combination spanner">' +
+    '<label for="lt-drawer">Drawer</label><select class="field" id="lt-drawer"><option value="">Unknown</option>' + d.drawers.map(function (x) { return '<option value="' + x.drawerId + '">Drawer ' + pad2(x.drawerNumber) + '</option>'; }).join('') + '</select>' +
+    '<label for="lt-seen">Last seen (aircraft / work order / location)</label><textarea class="field" id="lt-seen" maxlength="300"></textarea>' +
+    '<button class="btn danger big" id="lt-go" style="width:100%">⚠ Send Missing Tool Alert</button></form></div>';
+}
+function bindLostForm(toolboxId, after) {
+  $('lt-form').onsubmit = function (e) {
+    e.preventDefault(); var b = $('lt-go'); b.disabled = true;
+    authed('reportMissingTool', { toolboxId: toolboxId, drawerId: $('lt-drawer').value, toolDescription: $('lt-tool').value, lastSeen: $('lt-seen').value })
+      .then(function (r) { openModal('Report sent', '<div class="alert red"><b>OPEN TOOL DISCREPANCY ' + esc(r.reportId) + '</b></div><p>An alert e-mail with your name has been sent to the PCH missing-tool contacts and the report is saved in the history. Inform your supervisor now and follow the PCH lost-tool procedure.</p><div class="actionline"><button class="btn" onclick="closeModal()">OK</button></div>'); after && after(); })
+      .catch(function (err) { b.disabled = false; fail(err); });
+  };
+}
+
+// ================= ADMIN =================
+var ADMIN_MENU = [['dashboard', '▦', 'Dashboard'], ['toolboxes', '▣', 'Toolboxes'], ['pending', '◷', 'Pending approvals'], ['employees', '☺', 'Employees & Access'],
+  ['history', '≡', 'Revision history'], ['lost', '⚑', 'Lost tools'], ['qr', '▤', 'QR codes'], ['settings', '⚙', 'Settings'], ['audit', '✎', 'Audit log']];
+var ROLE_LABEL = { ADMIN: 'Administrator', QUALITY: 'Quality Manager', MECHANIC: 'Mechanic' };
+var MGR_ONLY = ['employees', 'settings'];
+var ADMIN_TITLE = { dashboard: 'Tool Control Dashboard', toolboxes: 'Toolboxes', pending: 'Pending Approvals', employees: 'Employees & Access', history: 'Revision History', lost: 'Lost Tools', qr: 'QR Codes', settings: 'Settings', audit: 'Audit Log', toolbox: 'Toolbox' };
+
+function renderAdminShell(view) {
+  $('app').innerHTML = '<div class="shell"><aside class="sidebar">' + brand('HELICOPTERS') + '<div class="eyebrow" style="margin:20px 8px 0;color:#8eb0d1">Tool Control</div><nav class="menu" aria-label="Administration">' +
+    ADMIN_MENU.filter(function (m) { return S.user.role === 'ADMIN' || MGR_ONLY.indexOf(m[0]) < 0; }).map(function (m) { return '<button data-av="' + m[0] + '"><span>' + m[1] + ' &nbsp; ' + m[2] + '</span>' + (m[0] === 'pending' ? '<span class="badge hidden" id="pend-badge"></span>' : '') + '</button>'; }).join('') +
+    '</nav><div class="sidefoot">Signed in as<br><b style="color:#fff">' + esc(S.user.displayName) + '</b><br>' + esc(S.user.email) + '<br><button class="secondary" id="signout2" style="margin-top:10px;width:100%">Sign out</button></div></aside>' +
+    '<main class="main"><div class="toolbar"><div><div class="eyebrow">Maintenance operations · Pacific Crown Helicopters</div><h1 id="a-title">Dashboard</h1></div>' +
+    '<div class="userchip hide-sm">' + esc(S.user.displayName) + ' · ' + esc(ROLE_LABEL[S.user.role]) + '</div></div>' +
+    '<div class="viewselect" aria-label="Administration menu">' + ADMIN_MENU.filter(function (m) { return S.user.role === 'ADMIN' || MGR_ONLY.indexOf(m[0]) < 0; }).map(function (m) { return '<button data-av="' + m[0] + '">' + m[2] + '</button>'; }).join('') + '<button id="signout3">Sign out</button></div>' +
+    '<section id="a-body"></section></main></div>';
+  document.querySelectorAll('[data-av]').forEach(function (b) { b.onclick = function () { adminView(b.dataset.av); }; });
+  $('signout2').onclick = signOut; $('signout3').onclick = signOut;
+  adminView(view || 'dashboard');
+}
+function setActive(view) {
+  document.querySelectorAll('[data-av]').forEach(function (b) { b.classList.toggle('active', b.dataset.av === view); });
+  $('a-title').textContent = ADMIN_TITLE[view] || '';
+}
+function refreshBadge(n) { var b = $('pend-badge'); if (!b) return; if (n > 0) { b.textContent = n; b.classList.remove('hidden'); } else b.classList.add('hidden'); }
+
+function adminView(view, arg) {
+  S.view = view; setActive(view === 'toolbox' ? 'toolboxes' : view); var body = $('a-body'); loading(body); window.scrollTo(0, 0);
+  var f = { dashboard: aDashboard, toolboxes: aToolboxes, toolbox: aToolbox, pending: aPending, employees: aEmployees, history: aHistory, lost: aLost, qr: aQr, settings: aSettings, audit: aAudit }[view];
+  f(body, arg);
+}
+
+// ---- dashboard ----
+function aDashboard(body) {
+  Promise.all([authed('adminGetDashboard'), authed('adminListToolboxes'), authed('listSubmissions', { status: 'PENDING' })]).then(function (r) {
+    var d = r[0], tbs = r[1], pend = r[2]; refreshBadge(d.pending);
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><button class="btn mgr" id="d-add">+ Add employee</button></div></div>' +
+      '<div class="stats"><div class="panel metric"><div class="muted">Toolboxes</div><strong>' + d.toolboxesActive + '</strong><span class="green" style="font-size:11px">Active · ' + d.toolboxesDraft + ' draft</span></div>' +
+      '<div class="panel metric"><div class="muted">Pending reviews</div><strong>' + d.pending + '</strong><span class="muted">Action needed</span></div>' +
+      '<div class="panel metric"><div class="muted">Open discrepancies</div><strong style="color:' + (d.openDiscrepancies ? 'var(--red)' : 'inherit') + '">' + d.openDiscrepancies + '</strong><span class="muted">Lost tools</span></div></div>' +
+      '<div class="layout"><div><div class="row"><h3>Toolbox Register</h3><span class="pill">Published record</span></div><div class="panel tablewrap" style="margin-top:12px;padding:8px"><table class="tbl"><thead><tr><th>Toolbox</th><th>Status</th><th>Rev</th><th class="hide-sm">Photos</th><th class="hide-sm">Pending</th><th class="hide-sm">Last check</th></tr></thead><tbody>' +
+      tbs.filter(function (t) { return t.status !== 'ARCHIVED'; }).map(function (t) {
+        return '<tr class="click" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b> ' + esc(t.label) + (t.openDiscrepancies ? ' <span class="pill red">OPEN</span>' : '') + '</td><td>' + pill(t.status) + '</td><td>R' + pad2(t.documentRevision) + '</td>' +
+          '<td class="hide-sm">' + t.withPhoto + '/' + t.drawerCount + '</td><td class="hide-sm">' + (t.pendingCount ? '<span class="pill pending">' + t.pendingCount + '</span>' : '0') + '</td><td class="hide-sm">' + (t.lastCheck ? fd(t.lastCheck.checkedAt) : '—') + '</td></tr>';
+      }).join('') + '</tbody></table></div></div>' +
+      '<div class="side"><div class="panel"><h3>Pending Approval</h3>' + (pend.length ? pend.slice(0, 6).map(function (s) {
+        return '<div class="item"><b>Toolbox ' + esc(s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber) + ' · Requested R' + pad2(s.proposedRevision) + '</b><p class="muted">' + esc(s.description) + ' · ' + esc(s.submittedBy) + ' · ' + fdt(s.submittedAt) + '</p><button class="btn" data-rev="' + s.submissionId + '">Review</button></div>';
+      }).join('') : '<p class="muted">No pending submissions.</p>') + '</div>' +
+      '<div class="panel mgr"><h3>Employee Access</h3><div class="item"><strong>' + d.activeUsers + ' active</strong> <span class="muted">· ' + d.invitedUsers + ' awaiting approval</span></div><div class="gap"><button class="secondary" id="d-emp">Manage employees</button><button class="secondary" id="d-former">Former Employees</button></div></div>' +
+      '<div class="panel"><h3 style="color:var(--red)">Missing-tool alerts</h3><div class="muted">Alerts are e-mailed to:</div>' +
+        (d.lostToolEmails ? d.lostToolEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">No address set – alerts go to the administrators.</p>') +
+        '<div class="muted" style="margin-top:10px">Updated register PDF (each approval) goes to:</div>' +
+        (d.registerEmails ? d.registerEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">Administrators.</p>') +
+        '<button class="secondary mgr" id="d-lost-mails">Edit alert e-mails</button></div>' +
+      '<div class="panel"><h3>Recent activity</h3>' + d.recent.slice(0, 8).map(function (e) { return '<div class="item"><b style="font-size:12px">' + esc(e.action.replace(/_/g, ' ')) + '</b><div class="muted">' + esc(e.actor) + ' · ' + fdt(e.createdAt) + '</div></div>'; }).join('') + '</div></div></div>';
+    body.querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { adminView('toolbox', r.dataset.tb); }; });
+    body.querySelectorAll('[data-rev]').forEach(function (b) { b.onclick = function () { openReview(b.dataset.rev); }; });
+    $('d-add').onclick = function () { employeeForm(null); };
+    $('d-emp').onclick = function () { adminView('employees'); };
+    $('d-former').onclick = function () { adminView('employees', 'former'); };
+    $('d-lost-mails').onclick = function () { adminView('settings'); };
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---- toolboxes ----
+function aToolboxes(body) {
+  authed('adminListToolboxes').then(function (tbs) {
+    body.innerHTML = '<div class="panel"><div class="row"><input class="field search" id="tb-q" placeholder="Search toolbox number or name" aria-label="Search toolboxes"><div class="gap"><label class="check" style="margin:0"><input type="checkbox" id="tb-arch"> Show archived</label><button class="btn mgr" id="tb-new">+ New toolbox</button></div></div>' +
+      '<div class="tablewrap"><table class="tbl" style="margin-top:12px"><thead><tr><th>No.</th><th>Toolbox</th><th>Status</th><th>Register</th><th class="hide-sm">Drawers / photos</th><th class="hide-sm">Pending</th><th class="hide-sm">QR</th></tr></thead><tbody id="tb-rows"></tbody></table></div></div>';
+    var draw = function () {
+      var q = $('tb-q').value.toLowerCase(), arch = $('tb-arch').checked;
+      $('tb-rows').innerHTML = tbs.filter(function (t) { return (arch || t.status !== 'ARCHIVED') && (!q || (t.toolboxNumber + ' ' + t.label).toLowerCase().indexOf(q) > -1); }).map(function (t) {
+        return '<tr class="click" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b></td><td>' + esc(t.label) + (t.status === 'DRAFT' ? '<div class="muted">' + esc(t.notes || '') + '</div>' : '') + '</td><td>' + pill(t.status) + '</td><td>REV ' + pad2(t.documentRevision) + '<div class="muted">' + fd(t.approvedAt) + '</div></td>' +
+          '<td class="hide-sm">' + t.drawerCount + ' / ' + t.withPhoto + '</td><td class="hide-sm">' + t.pendingCount + '</td><td class="hide-sm">' + (t.publicEnabled ? 'On' : 'Off') + '</td></tr>'; }).join('') || '<tr><td colspan="7" class="empty">No toolboxes.</td></tr>';
+      $('tb-rows').querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { adminView('toolbox', r.dataset.tb); }; });
+    };
+    $('tb-q').oninput = draw; $('tb-arch').onchange = draw; draw();
+    $('tb-new').onclick = toolboxForm;
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+function toolboxForm() {
+  openModal('New Toolbox', '<form id="nt"><label for="nt-num">Toolbox number</label><input class="field" id="nt-num" maxlength="20" placeholder="e.g. 130">' +
+    '<label for="nt-label">Label / display name</label><input class="field" id="nt-label" required maxlength="80" placeholder="e.g. Diego">' +
+    '<label for="nt-loc">Location (optional)</label><input class="field" id="nt-loc" maxlength="80">' +
+    '<label for="nt-dr">Number of drawers</label><input class="field" id="nt-dr" type="number" min="1" max="30" value="6">' +
+    '<label class="check"><input type="checkbox" id="nt-draft"> Create as DRAFT (not visible to mechanics or QR until activated)</label>' +
+    '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Create toolbox</button></div></form>');
+  $('nt').onsubmit = function (e) {
+    e.preventDefault();
+    authed('adminCreateToolbox', { toolboxNumber: $('nt-num').value, label: $('nt-label').value, location: $('nt-loc').value, drawerCount: $('nt-dr').value, status: $('nt-draft').checked ? 'DRAFT' : 'ACTIVE' })
+      .then(function (r) { closeModal(); toast('Toolbox created.'); adminView('toolbox', r.toolboxId); }).catch(fail);
+  };
+}
+
+function aToolbox(body, id) {
+  Promise.all([authed('getToolboxDetail', id), S.user.role === 'ADMIN' ? authed('adminListUsers') : Promise.resolve([])]).then(function (r) {
+    var d = r[0], users = r[1]; S.detail = d;
+    var qr = qrImg(d.publicUrl, 4);
+    body.innerHTML = '<div class="row" style="margin-bottom:10px"><button class="secondary" id="tb-back">← All toolboxes</button><div class="gap"><button class="secondary" id="tb-print">Print register</button><button class="secondary" id="tb-check">Record check</button><button class="secondary danger" id="tb-lost">Report missing tool</button></div></div>' +
+      (d.isTest ? '<div class="alert">TEST / SIMULATION toolbox — isolated from live registers.</div>' : '') +
+      (d.status === 'DRAFT' ? '<div class="alert">DRAFT — imported or newly created. Confirm the number, mechanic and drawer count, upload and approve baseline photos, then set the status to ACTIVE. ' + esc(d.notes || '') + '</div>' : '') +
+      (d.openReports.length ? '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b><br>' + d.openReports.map(function (x) { return esc(x.reportId + ' · ' + x.toolDescription + ' · ' + fdt(x.reportedAt)); }).join('<br>') + '</div>' : '') +
+      '<div class="layout" style="margin-top:12px"><div><div class="row"><h3>Toolbox ' + esc(d.toolboxNumber || '') + ' · Drawer Register</h3><span class="gap">' + pill(d.status) + '<span class="pill blue">REV ' + pad2(d.documentRevision) + '</span></span></div>' +
+      '<div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, true); }).join('') + '</div>' +
+      '<div class="panel" style="margin-top:16px"><h3>History</h3>' + (d.history.length ? d.history.map(function (h) {
+        return '<div class="item"><div class="row"><b>' + evTitle(h) + '</b>' + pill(h.eventType) + '</div><div class="muted">' + fdt(h.occurredAt) + ' · ' + esc(h.actor) + '</div><div style="font-size:13px">' + esc(h.description) + '</div></div>'; }).join('') : '<p class="muted">No history yet.</p>') + '</div></div>' +
+      '<div class="side"><div class="panel mgr"><h3>Details</h3><form id="tb-edit">' +
+      '<label for="te-num">Toolbox number</label><input class="field" id="te-num" maxlength="20" value="' + esc(d.toolboxNumber) + '">' +
+      '<label for="te-label">Label</label><input class="field" id="te-label" maxlength="80" value="' + esc(d.label) + '">' +
+      '<label for="te-loc">Location</label><input class="field" id="te-loc" maxlength="80" value="' + esc(d.location || '') + '">' +
+      '<label for="te-mech">Primary mechanic</label><select class="field" id="te-mech"><option value="">—</option>' + users.filter(function (u) { return u.status === 'ACTIVE'; }).map(function (u) { return '<option value="' + u.userId + '"' + (u.userId === d.mechanicUserId ? ' selected' : '') + '>' + esc(u.displayName) + '</option>'; }).join('') + '</select>' +
+      '<label for="te-dr">Drawers</label><input class="field" id="te-dr" type="number" min="1" max="30" value="' + d.drawerCount + '">' +
+      '<label for="te-st">Status</label><select class="field" id="te-st">' + ['ACTIVE', 'DRAFT', 'TEST', 'ARCHIVED'].map(function (s) { return '<option' + (s === d.status ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
+      '<label class="check"><input type="checkbox" id="te-pub"' + (d.publicEnabled ? ' checked' : '') + '> Public QR auditor view enabled</label>' +
+      '<label for="te-notes">Notes</label><textarea class="field" id="te-notes" maxlength="300">' + esc(d.notes || '') + '</textarea>' +
+      '<button class="btn" style="width:100%">Save changes</button></form></div>' +
+      '<div class="panel"><h3>Permanent QR code</h3><div class="qrbox">' + qr + '</div><p class="muted">Anyone holding this QR link can view the approved photos of this toolbox only (no sign-in). Pending and rejected items are never shown.</p>' +
+      '<div class="gap"><button class="secondary" id="qr-copy">Copy link</button><button class="secondary" id="qr-open">Open auditor view</button><button class="secondary" id="qr-print">Print label</button><button class="secondary danger mgr" id="qr-rot">Rotate (emergency)</button></div></div>' +
+      '<div class="panel"><h3>Assigned staff</h3>' + (d.assigned.length ? d.assigned.map(function (a) { return '<div class="item"><b>' + esc(a.name) + '</b> <span class="muted">' + (a.canSubmit ? 'can submit photos' : 'view only') + '</span></div>'; }).join('') : '<p class="muted">Nobody assigned. Assign staff in Employees &amp; Access.</p>') + '</div></div></div>';
+    hydratePhotos(body); bindDrawerButtons(body);
+    $('tb-back').onclick = function () { adminView('toolboxes'); };
+    $('tb-print').onclick = function () { printRegister(d.toolboxId); };
+    $('tb-check').onclick = function () { openModal('Record Toolbox Check', checkFormHtml()); bindCheckForm(d.toolboxId, function () { closeModal(); adminView('toolbox', d.toolboxId); }); };
+    $('tb-lost').onclick = function () { openModal('Report Missing Tool', lostFormHtml(d)); bindLostForm(d.toolboxId, function () { adminView('toolbox', d.toolboxId); }); };
+    $('tb-edit').onsubmit = function (e) {
+      e.preventDefault();
+      authed('adminUpdateToolbox', d.toolboxId, { toolboxNumber: $('te-num').value, label: $('te-label').value, location: $('te-loc').value, mechanicUserId: $('te-mech').value,
+        drawerCount: $('te-dr').value, status: $('te-st').value, publicEnabled: $('te-pub').checked, notes: $('te-notes').value })
+        .then(function () { toast('Toolbox saved.'); adminView('toolbox', d.toolboxId); }).catch(fail);
+    };
+    $('qr-copy').onclick = function () { copyText(d.publicUrl); };
+    $('qr-open').onclick = function () { window.open(d.publicUrl, '_blank', 'noopener'); };
+    $('qr-print').onclick = function () { printQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
+    $('qr-rot').onclick = function () {
+      if (!confirm('Rotate the QR token? The QR code already printed on this toolbox will STOP working and a new label must be printed.')) return;
+      authed('adminRotatePublicToken', d.toolboxId).then(function () { toast('QR token rotated. Print the new label.'); adminView('toolbox', d.toolboxId); }).catch(fail);
+    };
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+function copyText(t) {
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Link copied.'); })
+    .catch(function () { openModal('Copy link', '<textarea class="field" readonly style="min-height:120px">' + esc(t) + '</textarea>'); });
+}
+function qrImg(url, cell) {
+  if (typeof qrcode !== 'function') return '<p class="muted">QR generator unavailable.</p>';
+  var q = qrcode(0, 'M'); q.addData(url); q.make();
+  return '<img alt="QR code for the toolbox auditor view" src="' + q.createDataURL(cell || 4, 2) + '">';
+}
+/** Prints only after every image in the print area has finished loading (QR codes, photos, logo). */
+function printWhenReady() {
+  var imgs = Array.prototype.slice.call($('print-root').querySelectorAll('img'));
+  Promise.all(imgs.map(function (im) {
+    if (im.complete && im.naturalWidth) return Promise.resolve();
+    return new Promise(function (r) { im.onload = im.onerror = function () { r(); }; });
+  })).then(function () { setTimeout(function () { window.print(); }, 300); });
+}
+/** Vector QR for printing (prints sharply and does not depend on image decoding). */
+function qrSvg(url) {
+  if (typeof qrcode !== 'function') return '<p>QR generator unavailable.</p>';
+  var q = qrcode(0, 'M'); q.addData(url); q.make();
+  var n = q.getModuleCount(), m = 2, size = n + m * 2, path = '';
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) path += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" width="160" height="160" shape-rendering="crispEdges" style="display:block;margin:8px auto"><rect width="100%" height="100%" fill="#fff"/><path d="' + path + '" fill="#000"/></svg>';
+}
+function printQr(items) {
+  $('print-root').innerHTML = '<div class="pr-qr"><div class="qrsheet">' + items.map(function (t) {
+    return '<div class="qrcard">' + (LOGO ? '<img class="logo" src="' + LOGO + '" alt="">' : '') + '<div style="font-size:9pt;letter-spacing:.1em">TOOL CONTROL REGISTER</div><h2 style="margin:4px 0">Toolbox ' + esc(t.toolboxNumber || '') + '</h2><div>' + esc(t.label) + '</div>' + qrSvg(t.url) + '<div style="font-size:8pt">Scan to view the approved drawer photo register (read-only)</div></div>'; }).join('') + '</div></div>';
+  printWhenReady();
+}
+
+// ---- pending approvals / review ----
+function aPending(body) {
+  authed('listSubmissions', { status: 'PENDING' }).then(function (list) {
+    refreshBadge(list.length);
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Pending Approval</h3><div class="muted">Submissions are not official until approved. Compare the current and proposed photos.</div></div></div>' +
+      (list.length ? '<div class="list">' + list.map(function (s) {
+        return '<div class="item"><div class="row"><div><b>Toolbox ' + esc(s.toolboxNumber || '') + ' ' + esc(s.toolboxLabel) + ' · Drawer ' + pad2(s.drawerNumber) + ' · Requested R' + pad2(s.proposedRevision) + '</b>' +
+          '<div class="muted">' + esc(s.submittedBy) + ' · ' + fdt(s.submittedAt) + ' · ' + esc(s.submissionId) + '</div><div style="font-size:13px;margin-top:4px">' + esc(s.description) + '</div></div>' +
+          '<button class="btn" data-rev="' + s.submissionId + '">Review</button></div></div>'; }).join('') + '</div>' : '<div class="empty">No pending submissions.</div>') + '</div>' +
+      '<div class="panel" style="margin-top:14px"><h3>Recently decided</h3><div id="pd-recent"><div class="spinner"></div></div></div>';
+    body.querySelectorAll('[data-rev]').forEach(function (b) { b.onclick = function () { openReview(b.dataset.rev); }; });
+    authed('listSubmissions', {}).then(function (all) {
+      var done = all.filter(function (s) { return s.status !== 'PENDING'; }).slice(0, 15);
+      $('pd-recent').innerHTML = done.length ? done.map(function (s) { return '<div class="item"><div class="row"><b>Toolbox ' + esc(s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber) + (s.approvedRevision ? ' · Rev ' + pad2(s.approvedRevision) : '') + '</b>' + pill(s.status) + '</div><div class="muted">' + esc(s.submittedBy) + ' · reviewed by ' + esc(s.reviewedBy) + ' ' + fdt(s.reviewedAt) + (s.reviewNotes ? ' · ' + esc(s.reviewNotes) : '') + '</div></div>'; }).join('') : '<p class="muted">Nothing yet.</p>';
+    });
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+function openReview(id) {
+  openModal('Review submission', '<div class="spinner"></div>', 'wide');
+  authed('getSubmissionForReview', id).then(function (s) {
+    var cur = s.currentHasPhoto ? photoHtml('drawer', s.drawerId, '', true, 'Current approved · Rev ' + pad2(s.currentRevision)) : photoHtml('drawer', '', '', false, 'No approved photo yet');
+    var prop = photoHtml('sub', s.submissionId, '', true, 'Proposed · ' + s.submissionId);
+    $('modal-title').textContent = 'Toolbox ' + (s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber);
+    $('modal-body').innerHTML = '<div class="compare"><div><div class="row"><b>Current approved</b><span class="rev">R' + pad2(s.currentRevision) + '</span></div>' + cur + '<div class="muted">' + (s.currentApprovedAt ? 'Approved ' + fdt(s.currentApprovedAt) : '—') + '</div></div>' +
+      '<div><div class="row"><b>Proposed</b>' + pill(s.status) + '</div>' + prop + '<div class="muted">Submitted ' + fdt(s.submittedAt) + ' by ' + esc(s.submittedBy) + '</div></div></div>' +
+      '<div class="banner" style="margin-top:12px"><b>Change note:</b> ' + esc(s.description) + '</div>' +
+      (s.status === 'PENDING' ? '<label for="rv-notes" style="margin-top:12px">Approval notes (optional) / rejection reason (required to reject)</label><textarea class="field" id="rv-notes" maxlength="500"></textarea>' +
+        '<div class="actionline"><button class="secondary danger" id="rv-rej">Reject</button><button class="btn green" id="rv-app">Approve as Rev ' + pad2(s.currentRevision + 1) + '</button></div>'
+        : '<div class="alert">This submission is ' + esc(s.status) + (s.reviewNotes ? ': ' + esc(s.reviewNotes) : '') + '.</div>');
+    hydratePhotos($('modal-body'));
+    if (s.status !== 'PENDING') return;
+    $('rv-app').onclick = function () {
+      this.disabled = true; $('rv-rej').disabled = true;
+      authed('approveSubmission', s.submissionId, $('rv-notes').value).then(function (r) {
+        closeModal(); toast('Approved: Drawer ' + pad2(s.drawerNumber) + ' is now Rev ' + pad2(r.revision) + ' (register REV ' + pad2(r.documentRevision || 0) + ').');
+        delete S.imgs[imgKey('drawer', s.drawerId, 'thumb')]; delete S.imgs[imgKey('drawer', s.drawerId, 'full')];
+        adminView(S.view === 'toolbox' ? 'toolbox' : S.view, S.view === 'toolbox' ? S.detail.toolboxId : undefined);
+      }).catch(function (e) { fail(e); $('rv-app').disabled = false; $('rv-rej').disabled = false; });
+    };
+    $('rv-rej').onclick = function () {
+      var why = $('rv-notes').value.trim(); if (why.length < 3) { toast('Enter the reason for rejection.', true); $('rv-notes').focus(); return; }
+      this.disabled = true; $('rv-app').disabled = true;
+      authed('rejectSubmission', s.submissionId, why).then(function () { closeModal(); toast('Rejected. The approved photo is unchanged.'); adminView(S.view === 'toolbox' ? 'toolbox' : S.view, S.view === 'toolbox' ? S.detail.toolboxId : undefined); })
+        .catch(function (e) { fail(e); $('rv-app').disabled = false; $('rv-rej').disabled = false; });
+    };
+  }).catch(function (e) { $('modal-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---- employees ----
+function aEmployees(body, focus) {
+  Promise.all([authed('adminListUsers'), authed('adminListToolboxes')]).then(function (r) {
+    var users = r[0]; S.allBoxes = r[1];
+    var act = users.filter(function (u) { return u.status !== 'INACTIVE'; }), former = users.filter(function (u) { return u.status === 'INACTIVE'; });
+    var rows = function (list, isFormer) {
+      return list.length ? list.map(function (u) {
+        var pinInfo = u.role !== 'MECHANIC' ? '<span class="muted">e-mail code</span>' : (u.loginName ? '<b>' + esc(u.loginName) + '</b><br>' : '') +
+          (u.pinLocked ? '<span class="pill red">PIN LOCKED</span>' : !u.hasPin ? '<span class="pill grey">NO PIN</span>' : u.pinMustChange ? '<span class="pill pending">TEMP PIN</span>' : '<span class="pill">PIN SET</span>');
+        return '<tr><td><b>' + esc(u.displayName) + '</b><div class="muted">' + esc(u.email) + (u.employeeNo ? ' · Emp ' + esc(u.employeeNo) : '') + (u.toolTagNo ? ' · Tag ' + esc(u.toolTagNo) : '') + '</div></td><td>' + esc(ROLE_LABEL[u.role] || u.role) + '</td><td>' + pill(u.status) + '</td><td>' + pinInfo + '</td>' +
+          '<td class="hide-sm">' + (u.toolboxes.map(function (t) { return esc((t.toolboxNumber || '') + ' ' + (t.label || '')); }).join('<br>') || '—') + '</td><td class="hide-sm">' + fdt(u.lastLoginAt) + '</td><td><div class="gap">' +
+          (isFormer ? '<button class="secondary" data-react="' + u.userId + '">Reactivate</button>' :
+            (u.status === 'INVITED' ? '<button class="btn" data-act="' + u.userId + '">Approve access</button>' : '') + (u.role === 'MECHANIC' ? '<button class="secondary" data-pin="' + u.userId + '">' + (u.hasPin ? 'Reset PIN' : 'Issue PIN') + '</button>' : '') + '<button class="secondary" data-edit="' + u.userId + '">Edit</button><button class="secondary danger" data-deact="' + u.userId + '">Deactivate</button>') +
+          '</div></td></tr>'; }).join('') : '<tr><td colspan="7" class="empty">None.</td></tr>';
+    };
+    var head = '<thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Login / PIN</th><th class="hide-sm">Toolboxes</th><th class="hide-sm">Last sign-in</th><th></th></tr></thead>';
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Employees &amp; Access</h3><div class="muted">Only administrators create, approve, assign and deactivate accounts. There is no self-registration.</div></div><div class="gap"><button class="secondary" id="e-shared">Same PIN for all mechanics</button><button class="secondary" id="e-pins">Issue individual PINs</button><button class="btn" id="e-add">+ Add employee</button></div></div>' +
+      '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(act, false) + '</tbody></table></div></div>' +
+      '<div class="panel" style="margin-top:14px" id="former"><h3>Former Employees</h3><div class="muted">Deactivated accounts: access revoked; records, photos and history are preserved. Visible to administrators only.</div>' +
+      '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(former, true) + '</tbody></table></div></div>';
+    $('e-add').onclick = function () { employeeForm(null); };
+    $('e-pins').onclick = function () { issuePins([]); };
+    $('e-shared').onclick = function () {
+      openModal('Same PIN for all mechanics', '<p>Every mechanic signs in with their <b>surname</b> and this PIN. New mechanics get it automatically. Each person can still change to a personal PIN later.</p>' +
+        '<div class="alert">Anyone who knows a surname and this PIN can sign in as that mechanic. Photo changes still need approval by the administrator or Quality Manager.</div>' +
+        '<form id="sp"><label for="sp-pin">Shared PIN (3–6 numbers)</label><input class="field codeinput" id="sp-pin" inputmode="numeric" maxlength="6" required>' +
+        '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Apply to all mechanics</button></div></form>');
+      $('sp').onsubmit = function (e) {
+        e.preventDefault();
+        authed('adminSetSharedPin', $('sp-pin').value).then(function (list) {
+          $('modal-body').innerHTML = '<div class="alert ok">Shared PIN applied to ' + list.length + ' mechanics.</div><div class="tablewrap"><table class="tbl"><thead><tr><th>Employee</th><th>Login name</th><th>Account</th></tr></thead><tbody>' +
+            list.map(function (x) { return '<tr><td>' + esc(x.displayName) + '</td><td><b>' + esc(x.loginName) + '</b></td><td>' + esc(x.status) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="actionline"><button class="btn" onclick="closeModal();adminView(\'employees\')">Done</button></div>';
+        }).catch(fail);
+      };
+    };
+    body.querySelectorAll('[data-pin]').forEach(function (b) { b.onclick = function () {
+      var u = users.find(function (x) { return x.userId === b.dataset.pin; });
+      if (u.hasPin && !confirm('Issue a new temporary PIN for ' + u.displayName + '? Their current PIN stops working and they are signed out.')) return;
+      issuePins([u.userId]); }; });
+    body.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { employeeForm(users.find(function (u) { return u.userId === b.dataset.edit; })); }; });
+    body.querySelectorAll('[data-act],[data-react]').forEach(function (b) { b.onclick = function () { setStatus(b.dataset.act || b.dataset.react, 'ACTIVE'); }; });
+    body.querySelectorAll('[data-deact]').forEach(function (b) { b.onclick = function () {
+      var u = users.find(function (x) { return x.userId === b.dataset.deact; });
+      if (confirm('Deactivate ' + u.displayName + '? Their access is revoked immediately; history is kept under Former Employees.')) setStatus(u.userId, 'INACTIVE'); }; });
+    if (focus === 'former') $('former').scrollIntoView();
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+function issuePins(ids) {
+  openModal('Temporary PINs', '<div class="spinner"></div>', 'wide');
+  authed('adminIssuePins', ids).then(function (list) {
+    if (!list.length) { $('modal-body').innerHTML = '<p>Everyone already has a PIN.</p>'; return; }
+    var rows = list.map(function (x) { return '<tr><td><b>' + esc(x.displayName) + '</b></td><td>' + esc(x.loginName) + '</td><td style="font-size:20px;letter-spacing:4px"><b>' + esc(x.pin) + '</b></td><td>' + esc(x.status) + '</td></tr>'; }).join('');
+    $('modal-body').innerHTML = '<div class="alert">These temporary PINs are shown <b>only now</b> (they are stored encrypted). Give each person their own PIN privately. At first sign-in they must create a personal PIN. INVITED accounts also need <b>Approve access</b>.</div>' +
+      '<div class="tablewrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>Employee</th><th>Login name</th><th>Temporary PIN</th><th>Account</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="actionline"><button class="secondary" id="pin-print">Print slips</button><button class="btn" id="pin-done">Done</button></div>';
+    $('pin-done').onclick = function () { closeModal(); adminView('employees'); };
+    $('pin-print').onclick = function () {
+      $('print-root').innerHTML = list.map(function (x) {
+        return '<div style="border:1px dashed #555;padding:12px;margin:8px 0;break-inside:avoid"><b>PCH Toolbox Control – personal sign-in</b><br>' + esc(x.displayName) +
+          '<br>Login name: <b>' + esc(x.loginName) + '</b><br>Temporary PIN: <b style="font-size:16pt;letter-spacing:4px">' + esc(x.pin) + '</b><br><span style="font-size:8pt">Open the app, sign in, then create your own PIN. Do not share it.</span></div>'; }).join('');
+      printWhenReady();
+    };
+  }).catch(function (e) { $('modal-body').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+function setStatus(id, st) {
+  authed('adminSetUserStatus', id, st).then(function () { toast(st === 'ACTIVE' ? 'Access approved. The employee has been e-mailed.' : 'Employee deactivated and signed out.'); adminView('employees'); }).catch(fail);
+}
+function employeeForm(u) {
+  var boxes = (S.allBoxes || []).filter(function (t) { return t.status !== 'ARCHIVED'; });
+  var have = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : [];
+  var canSub = u ? (u.toolboxes.length ? u.toolboxes[0].canSubmit : true) : true;
+  openModal(u ? 'Edit employee' : 'Add Employee — Admin Only', '<form id="ef">' +
+    '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : '') + '">' +
+    '<label for="ef-email">E-mail (used for sign-in codes)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
+    '<div class="compare"><div><label for="ef-emp">Employee No. (optional)</label><input class="field" id="ef-emp" maxlength="20" value="' + esc(u ? u.employeeNo || '' : '') + '"></div>' +
+    '<div><label for="ef-tag">Tool Tag No. (optional)</label><input class="field" id="ef-tag" maxlength="20" value="' + esc(u ? u.toolTagNo || '' : '') + '"></div></div>' +
+    (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
+    '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Mechanic</option><option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option></select>' +
+    '<label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
+      return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
+    '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label>' +
+    (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Approve and activate now (sends an access e-mail). Untick to create as INVITED awaiting approval.</label>') +
+    '<div class="banner">No automatic registration from the personnel matrix. Verify the person before granting access.</div>' +
+    '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">' + (u ? 'Save' : 'Create employee') + '</button></div></form>');
+  $('ef').onsubmit = function (e) {
+    e.preventDefault();
+    var tbs = Array.prototype.slice.call(document.querySelectorAll('input[name=ef-tb]:checked')).map(function (x) { return x.value; });
+    var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
+      : authed('adminCreateEmployee', { displayName: $('ef-name').value, email: $('ef-email').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value, toolboxIds: tbs, canSubmit: $('ef-sub').checked, activateNow: $('ef-act').checked });
+    p.then(function () { closeModal(); toast(u ? 'Employee updated.' : 'Employee created.'); adminView('employees'); }).catch(fail);
+  };
+}
+
+// ---- revision history ----
+function aHistory(body) {
+  authed('adminListToolboxes').then(function (tbs) {
+    body.innerHTML = '<div class="panel"><div class="row"><select class="field search" id="h-tb" aria-label="Filter by toolbox"><option value="">All toolboxes</option>' + tbs.map(function (t) { return '<option value="' + t.toolboxId + '">' + esc(boxName(t)) + '</option>'; }).join('') + '</select></div><div id="h-rows"></div></div>';
+    var load = function () {
+      loading('h-rows');
+      authed('getRevisionHistory', $('h-tb').value || null).then(function (rows) {
+        $('h-rows').innerHTML = '<div class="tablewrap"><table class="tbl"><thead><tr><th>Date (Brisbane)</th><th>Toolbox</th><th>Drawer</th><th>Rev</th><th>Event</th><th class="hide-sm">Description</th><th>By</th></tr></thead><tbody>' + (rows.map(function (h) {
+          return '<tr><td>' + fdt(h.occurredAt) + '</td><td>' + esc((h.toolboxNumber || '') + ' ' + (h.toolboxLabel || '')) + '</td><td>' + (h.drawerNumber ? pad2(h.drawerNumber) : '—') + '</td><td>' + (/^MISSING/.test(h.eventType) ? '—' : 'R' + pad2(h.revision)) + '</td><td>' + pill(h.eventType) + '</td><td class="hide-sm">' + esc(h.description) + '</td><td>' + esc(h.actor) + '</td></tr>'; }).join('') || '<tr><td colspan="7" class="empty">No history yet.</td></tr>') + '</tbody></table></div>';
+      }).catch(function (e) { $('h-rows').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+    };
+    $('h-tb').onchange = load; load();
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---- lost tools ----
+function aLost(body) {
+  body.innerHTML = '<div class="panel"><div class="row"><div><h3>Lost Tools</h3><div class="muted">Discrepancies stay OPEN until an administrator closes them after review.</div></div><select class="field search" id="l-st" aria-label="Filter"><option value="OPEN">Open</option><option value="">All</option></select></div><div id="l-rows"></div></div>';
+  var load = function () {
+    loading('l-rows');
+    authed('listLostTools', $('l-st').value || null).then(function (rows) {
+      $('l-rows').innerHTML = rows.length ? rows.map(function (r) {
+        return '<div class="item"><div class="row"><b>' + esc(r.reportId) + ' · Toolbox ' + esc(r.toolboxNumber || '') + ' ' + esc(r.toolboxLabel || '') + (r.drawerNumber ? ' · Drawer ' + pad2(r.drawerNumber) : '') + '</b>' + pill(r.status) + '</div>' +
+          '<div>' + esc(r.toolDescription) + '</div><div class="muted">Reported by ' + esc(r.reportedBy) + ' · ' + fdt(r.reportedAt) + (r.lastSeen ? ' · Last seen: ' + esc(r.lastSeen) : '') + '</div>' +
+          (r.status === 'OPEN' ? '<button class="btn" style="margin-top:8px" data-res="' + r.reportId + '">Close discrepancy…</button>' : '<div class="muted">Closed by ' + esc(r.resolvedBy) + ' · ' + fdt(r.resolvedAt) + ' · ' + esc(r.resolution) + '</div>') + '</div>'; }).join('') : '<div class="empty">No reports.</div>';
+      $('l-rows').querySelectorAll('[data-res]').forEach(function (b) { b.onclick = function () { resolveForm(b.dataset.res, load); }; });
+    }).catch(function (e) { $('l-rows').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+  };
+  $('l-st').onchange = load; load();
+}
+function resolveForm(id, after) {
+  openModal('Close ' + id, '<form id="rs"><label class="check"><input type="radio" name="rs" value="CLOSED_FOUND"> Tool found</label><label class="check"><input type="radio" name="rs" value="CLOSED_NOT_FOUND"> Not found – lost-tool procedure completed</label>' +
+    '<label for="rs-txt">Resolution / actions taken</label><textarea class="field" id="rs-txt" required maxlength="500"></textarea><div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">Close discrepancy</button></div></form>');
+  $('rs').onsubmit = function (e) {
+    e.preventDefault(); var v = (document.querySelector('input[name=rs]:checked') || {}).value;
+    if (!v) { toast('Choose an outcome.', true); return; }
+    authed('resolveLostTool', id, v, $('rs-txt').value).then(function () { closeModal(); toast('Discrepancy closed.'); after(); }).catch(fail);
+  };
+}
+
+// ---- QR codes ----
+function aQr(body) {
+  authed('adminGetQrSheet', null).then(function (items) {
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>QR Codes</h3><div class="muted">One permanent QR per toolbox. It keeps working when photos are updated. Active and test toolboxes are listed.</div></div><button class="btn" id="q-print">Print all labels</button></div>' +
+      '<div class="qrsheet" style="margin-top:14px">' + items.map(function (t) {
+        return '<div class="qrcard">' + (LOGO ? '<img class="logo" src="' + LOGO + '" alt="">' : '') + '<div class="eyebrow">Tool Control Register</div><h3 style="margin:4px 0">Toolbox ' + esc(t.toolboxNumber || '') + '</h3><div>' + esc(t.label) + '</div>' + qrImg(t.url, 4) +
+          '<div class="gap" style="justify-content:center"><button class="secondary" data-copy="' + esc(t.url) + '">Copy link</button>' + (t.publicEnabled ? '' : '<span class="pill grey">QR OFF</span>') + '</div></div>'; }).join('') + '</div></div>';
+    body.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { copyText(b.dataset.copy); }; });
+    $('q-print').onclick = function () { printQr(items); };
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---- settings ----
+function aSettings(body) {
+  Promise.all([authed('adminGetSettings'), authed('adminGetLegacyMapping')]).then(function (r) {
+    var s = r[0], lm = r[1];
+    body.innerHTML = '<div class="layout"><div class="panel"><h3>System settings</h3><form id="st">' +
+      '<label for="st-org">Organisation name</label><input class="field" id="st-org" maxlength="80" value="' + esc(s.orgName) + '">' +
+      '<label class="check"><input type="checkbox" id="st-pub"' + (s.publicAuditorEnabled ? ' checked' : '') + '> Public QR auditor access enabled (anyone holding a toolbox QR can view its approved photos)</label>' +
+      '<label for="st-lost">Missing-tool alert e-mails (one or more, separated by commas)</label><textarea class="field" id="st-lost" placeholder="e.g. qasm@pch.com.au, stores@pch.com.au">' + esc(String(s.lostToolEmails || '').split(',').join(', ')) + '</textarea>' +
+      '<p class="muted" style="margin-top:-6px">Every missing-tool alert from a mechanic is e-mailed to these addresses. If empty, it goes to the administrators.</p>' +
+      '<label for="st-reg">Register PDF e-mails – receive the updated register PDF (new REV) after every approval</label><textarea class="field" id="st-reg" placeholder="e.g. gavin.merten@pacificcrown.com">' + esc(String(s.registerEmails || '').split(',').join(', ')) + '</textarea>' +
+      '<label for="st-mail">Extra notification e-mails for photo approvals (comma separated)</label><input class="field" id="st-mail" value="' + esc(s.notifyEmails) + '">' +
+      '<button class="btn">Save settings</button></form></div>' +
+      '<div class="side"><div class="panel"><h3>Application</h3>' + kv('App URL', 'PCH Toolbox Control web app') + '<button class="secondary" id="st-copy" style="margin-top:8px">Copy app link</button>' +
+      '<p class="muted">Drive and Sheets are private back-end storage and are not used by staff or auditors.</p></div></div></div>' +
+      '<div class="panel" style="margin-top:14px"><h3>Existing Drive folders – dry-run mapping</h3><div class="muted">Read-only proposal from the original "CMC TOOLS CONTROL QR CODE" folders. Nothing here has been applied. Imported toolboxes start as DRAFT.</div>' +
+      '<div class="tablewrap"><table class="tbl" style="margin-top:10px"><thead><tr><th>Current folder</th><th>Files</th><th>Proposed</th><th>Roster cross-check</th><th>Ambiguity</th><th>Status</th></tr></thead><tbody>' +
+      (lm.map(function (x) { return '<tr><td>' + esc(x.currentName) + '</td><td>' + esc(x.fileCount) + '</td><td>' + esc((x.proposedToolboxNumber || '?') + ' – ' + x.proposedLabel) + '</td><td>' + esc(x.rosterNote) + '</td><td>' + esc(x.ambiguity) + '</td><td>' + esc(x.status) + '</td></tr>'; }).join('') || '<tr><td colspan="6" class="empty">None.</td></tr>') + '</tbody></table></div></div>';
+    $('st-copy').onclick = function () { copyText(s.appUrl); };
+    $('st').onsubmit = function (e) {
+      e.preventDefault();
+      authed('adminUpdateSettings', { orgName: $('st-org').value, publicAuditorEnabled: $('st-pub').checked, notifyEmails: $('st-mail').value, lostToolEmails: $('st-lost').value, registerEmails: $('st-reg').value }).then(function () { toast('Settings saved.'); }).catch(fail);
+    };
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+// ---- audit ----
+function aAudit(body, page) {
+  page = page || 0;
+  authed('adminGetAuditLog', page).then(function (r) {
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Audit Log</h3><div class="muted">' + r.total + ' events · append-only</div></div><div class="gap">' +
+      (page > 0 ? '<button class="secondary" id="au-prev">← Newer</button>' : '') + ((page + 1) * 100 < r.total ? '<button class="secondary" id="au-next">Older →</button>' : '') + '</div></div>' +
+      '<div class="tablewrap"><table class="tbl" style="margin-top:10px"><thead><tr><th>Date (Brisbane)</th><th>Actor</th><th>Action</th><th class="hide-sm">Target</th><th class="hide-sm">Details</th></tr></thead><tbody>' +
+      r.rows.map(function (e) { return '<tr><td>' + fdt(e.createdAt) + '</td><td>' + esc(e.actor) + '</td><td>' + esc(e.action) + '</td><td class="hide-sm">' + esc(e.targetType + ' ' + e.targetId) + '</td><td class="hide-sm" style="font-size:11px">' + esc(e.details) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+    if ($('au-prev')) $('au-prev').onclick = function () { aAudit(body, page - 1); };
+    if ($('au-next')) $('au-next').onclick = function () { aAudit(body, page + 1); };
+  }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+}
+
+bootStatic();
+</script>
+
+</body>
+</html>
