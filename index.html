@@ -32,6 +32,7 @@ img{max-width:100%}
 .brand{display:flex;gap:11px;align-items:center;padding:0 8px 25px;border-bottom:1px solid #ffffff20}
 .brand-icon{background:#fff;width:46px;height:46px;display:grid;place-items:center;border-radius:10px;overflow:hidden;flex-shrink:0}
 .brand-icon img{width:42px;height:42px;object-fit:contain}
+.brand-icon.mark{background:none}.brand-icon.mark img{width:46px;height:46px}
 .brand-icon.txt{background:#217ad1;color:#fff;font-size:24px;font-weight:800}
 .brand strong{letter-spacing:.06em;font-size:13px;display:block}.brand small{display:block;color:#a6c0da;font-size:10px;letter-spacing:.15em}
 .eyebrow{font-size:11px;letter-spacing:.14em;color:var(--sub);font-weight:750;text-transform:uppercase}
@@ -221,6 +222,7 @@ var BOOT = (function () {
     submissionId: /^SUB-[0-9A-F]{12}$/.test(s) ? s : '', legacyLink: p.has('box'), badToken: !!t && !/^[0-9a-f]{64}$/.test(t) };
 })();
 var LOGO = '';
+var MARK = 'icon-mark.png'; /* PCH emblem (white on blue) for the app header */
 function apiCall(fn, args) {
   return fetch(API_URL, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ fn: fn, args: args }) }).then(function (r) { if (!r.ok) throw new Error('Server unavailable (' + r.status + '). Please try again.'); return r.json(); });
@@ -294,7 +296,9 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$
 
 // ---------- branding ----------
 function brand(sub, light) {
-  var icon = LOGO ? '<div class="brand-icon"><img src="' + LOGO + '" alt="Pacific Crown Helicopters logo"></div>' : '<div class="brand-icon txt">P</div>';
+  var mark = typeof MARK !== 'undefined' && MARK;
+  var icon = mark ? '<div class="brand-icon mark"><img src="' + mark + '" alt="Pacific Crown Helicopters"></div>'
+    : LOGO ? '<div class="brand-icon"><img src="' + LOGO + '" alt="Pacific Crown Helicopters logo"></div>' : '<div class="brand-icon txt">P</div>';
   return '<div class="brand">' + icon + '<div><strong>PACIFIC CROWN</strong><small>' + esc(sub || 'HELICOPTERS') + '</small></div></div>';
 }
 
