@@ -24,6 +24,8 @@ button,select,input,textarea{font:inherit}button{cursor:pointer}button:disabled{
 img{max-width:100%}
 .hidden{display:none!important}
 .role-quality .mgr{display:none!important}
+.view-only #rv-app,.view-only #rv-rej,.view-only [data-res],.view-only #d-add,.view-only #e-add{display:none!important}
+.view-only #rv-notes::before{content:''}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* ---------- admin shell ---------- */
@@ -356,6 +358,7 @@ function start() {
 function route() {
   if (S.user.mustChangePin) return renderChangePin(true);
   document.body.classList.toggle('role-quality', S.user.role === 'QUALITY');
+  document.body.classList.toggle('view-only', !!S.user.viewOnly);
   if (S.user.role === 'ADMIN' || S.user.role === 'QUALITY') {
     var v = BOOT.view === 'review' || BOOT.view === 'pending' ? 'pending' : BOOT.view === 'lost' ? 'lost' : 'dashboard';
     renderAdminShell(v);
