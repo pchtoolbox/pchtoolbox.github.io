@@ -568,15 +568,17 @@ function mechTab() {
   authed('getToolboxDetail', S.boxId).then(function (d) {
     S.detail = d;
     $('m-title').textContent = S.mtab === 'drawers' ? 'My Drawers' : 'My Toolbox';
-    $('m-sub').textContent = (d.toolboxNumber || '') + ' · ' + d.label + ' · ' + S.user.displayName;
+    $('m-sub').textContent = (d.toolboxNumber || '') + ' · ' + d.label + ' · ' + S.user.displayName + (S.user.toolTagNo ? ' · Tool Tag ' + S.user.toolTagNo : '');
     var h = boxSelect();
     if (S.mtab === 'home') {
       h += '<div class="panel"><div class="row"><strong>Toolbox ' + esc(d.toolboxNumber || '') + '</strong>' + pill(d.status) + '</div>' +
         '<p class="muted">' + d.drawerCount + ' registered drawers · Register REV ' + pad2(d.documentRevision) + ' · ' + d.withPhoto + ' with approved photo</p>' +
         (d.lastCheck ? '<p class="muted">Last check: ' + fdt(d.lastCheck.checkedAt) + ' · ' + (STATUS_TEXT[d.lastCheck.result] || d.lastCheck.result) + '</p>' : '<p class="muted">No toolbox check recorded yet.</p>') + '</div>';
+      if (S.user.toolTagNo) h += '<div class="banner" style="margin-top:10px">🏷 Your tool tag: <b>' + esc(S.user.toolTagNo) + '</b> – leave it in the place of any tool you borrow from a colleague.</div>';
       if (d.openReports.length) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b>' + d.openReports.map(function (r) { return '<div style="margin-top:8px">' + esc(r.reportId + ' · ' + r.toolDescription) + ' ' + pill(r.status) + (r.qmNotes && r.status === 'OPEN' ? '<div class="muted">Quality Manager: ' + esc(r.qmNotes) + '</div>' : '') + (r.mine && r.status === 'OPEN' ? '<button class="btn" style="margin-top:6px;width:100%" data-ltsol="' + r.reportId + '">✓ Tool found / submit solution</button>' : r.status === 'AWAITING_QM' ? '<div class="muted">Solution sent – waiting for the Quality Manager.</div>' : '') + '</div>'; }).join('') + '</div>';
       if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 Update Drawer Photo</button>';
       h += '<button class="btn danger big" id="m-alert" style="margin-top:9px">⚠ Missing Tool Alert</button>' +
+        '<button class="secondary big" id="m-tag" style="margin-top:9px">🔍 Find Tool Tag Owner</button>' +
         '<button class="secondary big" id="m-check" style="margin-top:9px">✓ Record Toolbox Check</button>' +
         '<button class="secondary big" id="m-hist" style="margin-top:9px">View My History</button>' +
         (d.publicUrl ? '<button class="secondary big" id="m-qr" style="margin-top:9px">▤ Print QR Label</button>' : '');
@@ -584,6 +586,7 @@ function mechTab() {
     h += '<h3 style="margin:20px 0 0">My Drawers</h3><div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, false); }).join('') + '</div>';
     if (S.mtab === 'home') h += signOutBtn();
     $('m-body').innerHTML = h; hydratePhotos($('m-body')); bindBoxSelect(); bindSignOut(); bindDrawerButtons($('m-body'));
+    if ($('m-tag')) $('m-tag').onclick = tagSearch;
     $('m-body').querySelectorAll('[data-ltsol]').forEach(function (b) { b.onclick = function () { ltSolutionForm(b.dataset.ltsol, mechTab); }; });
     if ($('m-update')) $('m-update').onclick = function () { openUpdate(null); };
     if ($('m-qr')) $('m-qr').onclick = function () { choosePrintQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
@@ -732,6 +735,25 @@ function bindLostForm(toolboxId, after) {
       .catch(function (err) { b.disabled = false; b.textContent = '⚠ Send Missing Tool Alert'; fail(err); });
   };
 }
+function tagSearch() {
+  openModal('🔍 Find tool tag owner', '<p class="muted">Found a tag in the place of a tool? Type the tag number to see who borrowed the tool.</p>' +
+    '<form id="tg-form"><label for="tg-no">Tool tag number</label><input class="field" id="tg-no" inputmode="numeric" maxlength="6" placeholder="e.g. 82" autocomplete="off">' +
+    '<button class="btn big" id="tg-go" style="width:100%">Search</button></form><div id="tg-res" style="margin-top:12px"></div>' +
+    '<button class="linkbtn" id="tg-all" style="margin-top:8px">Show all tags</button>');
+  var show = function (q) {
+    loading('tg-res');
+    authed('findToolTag', q).then(function (rows) {
+      $('tg-res').innerHTML = rows.length ? rows.map(function (r) {
+        return '<div class="item"><div class="row"><b style="font-size:18px">🏷 Tag ' + esc(r.tag) + '</b>' + (r.status && r.status !== 'ACTIVE' ? '<span class="pill grey">' + esc(r.status) + '</span>' : '') + '</div>' +
+          '<div style="font-size:17px;font-weight:700;margin-top:2px">' + esc(r.name) + '</div><div class="muted">' +
+          [r.employeeNo ? 'Emp ' + esc(r.employeeNo) : '', r.toolboxes.length ? 'Toolbox ' + esc(r.toolboxes.join(', ')) : '', r.source === 'register' ? 'From the tag register (not in the app)' : ''].filter(String).join(' · ') + '</div></div>';
+      }).join('') : '<div class="alert red">No owner found for tag ' + esc(q) + '. Please tell the tool controller.</div>';
+    }).catch(function (e) { $('tg-res').innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
+  };
+  $('tg-form').onsubmit = function (e) { e.preventDefault(); var q = $('tg-no').value.trim(); if (!q) { toast('Type the tag number.', true); return; } show(q); };
+  $('tg-all').onclick = function () { show('ALL'); };
+  setTimeout(function () { if ($('tg-no')) $('tg-no').focus(); }, 60);
+}
 function ltSolutionForm(id, after) {
   openModal('Tool found / solution – ' + id, '<form id="ls-form"><label class="check"><input type="radio" name="ls" value="FOUND" checked> Tool found – photo of the tool back in its place</label>' +
     '<label class="check"><input type="radio" name="ls" value="OTHER"> Other solution (describe it)</label>' +
@@ -787,7 +809,7 @@ function adminView(view, arg) {
 function aDashboard(body) {
   Promise.all([authed('adminGetDashboard'), authed('adminListToolboxes'), authed('listSubmissions', { status: 'PENDING' })]).then(function (r) {
     var d = r[0], tbs = r[1], pend = r[2]; refreshBadge(d.pending);
-    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><div class="gap"><button class="secondary" id="d-qr">▤ Print QR labels</button><button class="btn" id="d-add">+ Add employee</button></div></div></div>' +
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><div class="gap"><button class="secondary" id="d-tag">🔍 Find tool tag</button><button class="secondary" id="d-qr">▤ Print QR labels</button><button class="btn" id="d-add">+ Add employee</button></div></div></div>' +
       '<div class="stats"><div class="panel metric"><div class="muted">Toolboxes</div><strong>' + d.toolboxesActive + '</strong><span class="green" style="font-size:11px">Active · ' + d.toolboxesDraft + ' draft</span></div>' +
       '<div class="panel metric"><div class="muted">Pending reviews</div><strong>' + d.pending + '</strong><span class="muted">Action needed</span></div>' +
       '<div class="panel metric"><div class="muted">Open discrepancies</div><strong style="color:' + (d.openDiscrepancies ? 'var(--red)' : 'inherit') + '">' + d.openDiscrepancies + '</strong><span class="muted">Lost tools</span></div></div>' +
@@ -811,6 +833,7 @@ function aDashboard(body) {
     body.querySelectorAll('[data-rev]').forEach(function (b) { b.onclick = function () { openReview(b.dataset.rev); }; });
     $('d-add').onclick = function () { employeeForm(null); };
     $('d-qr').onclick = function () { pickAndPrintQr(null); };
+    $('d-tag').onclick = tagSearch;
     $('d-emp').onclick = function () { adminView('employees'); };
     $('d-former').onclick = function () { adminView('employees', 'former'); };
     $('d-lost-mails').onclick = function () { adminView('settings'); };
