@@ -166,6 +166,20 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
   .pr-limit{border:1px solid #142b43;padding:8px;margin:8px 0;font-size:9.5pt}
   .pr-qr .qrcard{break-inside:avoid;margin-bottom:10px}
   .pr-qr .qrsheet{grid-template-columns:repeat(3,1fr)}
+  /* QR labels: A4 full-sheet label paper cut into 4 (each 105 x 148.5 mm) */
+  body.printing-labels #print-root{font-size:10pt}
+  .lblpage{width:210mm;height:297mm;display:grid;grid-template-columns:105mm 105mm;grid-template-rows:148.5mm 148.5mm;break-after:page;page-break-after:always;overflow:hidden}
+  .lblpage:last-child{break-after:auto;page-break-after:auto}
+  .lbl{box-sizing:border-box;width:105mm;height:148.5mm;padding:9mm 8mm 7mm;outline:0.2mm dashed #c8c8c8;outline-offset:-0.1mm;display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden}
+  .lbl-empty{outline-color:#eee}
+  .lbl-logo{height:15mm;max-width:60mm;object-fit:contain}
+  .lbl-org{font-weight:700;font-size:10pt;letter-spacing:.12em;margin-top:2mm;color:#102941}
+  .lbl-sub{font-size:7.5pt;letter-spacing:.18em;color:#444}
+  .lbl-no{font-size:22pt;font-weight:800;margin-top:3mm;color:#102941;line-height:1.1}
+  .lbl-name{font-size:12pt;font-weight:600;margin-top:1mm}
+  .lbl-qr{margin-top:auto;margin-bottom:auto}
+  .lbl-qr svg{width:68mm!important;height:68mm!important;margin:0 auto!important}
+  .lbl-foot{font-size:7.5pt;color:#333;border-top:0.3mm solid #102941;padding-top:2mm;width:100%}
 }
 </style>
 
@@ -502,12 +516,14 @@ function mechTab() {
       if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 Update Drawer Photo</button>';
       h += '<button class="btn danger big" id="m-alert" style="margin-top:9px">⚠ Missing Tool Alert</button>' +
         '<button class="secondary big" id="m-check" style="margin-top:9px">✓ Record Toolbox Check</button>' +
-        '<button class="secondary big" id="m-hist" style="margin-top:9px">View My History</button>';
+        '<button class="secondary big" id="m-hist" style="margin-top:9px">View My History</button>' +
+        (d.publicUrl ? '<button class="secondary big" id="m-qr" style="margin-top:9px">▤ Print QR Label</button>' : '');
     }
     h += '<h3 style="margin:20px 0 0">My Drawers</h3><div class="grid">' + d.drawers.map(function (x) { return drawerCard(x, d.canSubmit, false); }).join('') + '</div>';
     if (S.mtab === 'home') h += signOutBtn();
     $('m-body').innerHTML = h; hydratePhotos($('m-body')); bindBoxSelect(); bindSignOut(); bindDrawerButtons($('m-body'));
     if ($('m-update')) $('m-update').onclick = function () { openUpdate(null); };
+    if ($('m-qr')) $('m-qr').onclick = function () { choosePrintQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
     if ($('m-alert')) $('m-alert').onclick = function () { openModal('⚠ Missing Tool Alert', lostFormHtml(d)); bindLostForm(d.toolboxId, mechTab); };
     if ($('m-check')) $('m-check').onclick = function () { S.mtab = 'report'; document.querySelector('[data-mt=report]').click(); };
     if ($('m-hist')) $('m-hist').onclick = function () { document.querySelector('[data-mt=history]').click(); };
@@ -644,7 +660,7 @@ function bindLostForm(toolboxId, after) {
 var ADMIN_MENU = [['dashboard', '▦', 'Dashboard'], ['toolboxes', '▣', 'Toolboxes'], ['pending', '◷', 'Pending approvals'], ['employees', '☺', 'Employees & Access'],
   ['history', '≡', 'Revision history'], ['lost', '⚑', 'Lost tools'], ['qr', '▤', 'QR codes'], ['settings', '⚙', 'Settings'], ['audit', '✎', 'Audit log']];
 var ROLE_LABEL = { ADMIN: 'Administrator', QUALITY: 'Quality Manager', MECHANIC: 'Mechanic' };
-var MGR_ONLY = ['employees', 'settings'];
+var MGR_ONLY = ['settings'];
 var ADMIN_TITLE = { dashboard: 'Tool Control Dashboard', toolboxes: 'Toolboxes', pending: 'Pending Approvals', employees: 'Employees & Access', history: 'Revision History', lost: 'Lost Tools', qr: 'QR Codes', settings: 'Settings', audit: 'Audit Log', toolbox: 'Toolbox' };
 
 function renderAdminShell(view) {
@@ -675,7 +691,7 @@ function adminView(view, arg) {
 function aDashboard(body) {
   Promise.all([authed('adminGetDashboard'), authed('adminListToolboxes'), authed('listSubmissions', { status: 'PENDING' })]).then(function (r) {
     var d = r[0], tbs = r[1], pend = r[2]; refreshBadge(d.pending);
-    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><button class="btn mgr" id="d-add">+ Add employee</button></div></div>' +
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><button class="btn" id="d-add">+ Add employee</button></div></div>' +
       '<div class="stats"><div class="panel metric"><div class="muted">Toolboxes</div><strong>' + d.toolboxesActive + '</strong><span class="green" style="font-size:11px">Active · ' + d.toolboxesDraft + ' draft</span></div>' +
       '<div class="panel metric"><div class="muted">Pending reviews</div><strong>' + d.pending + '</strong><span class="muted">Action needed</span></div>' +
       '<div class="panel metric"><div class="muted">Open discrepancies</div><strong style="color:' + (d.openDiscrepancies ? 'var(--red)' : 'inherit') + '">' + d.openDiscrepancies + '</strong><span class="muted">Lost tools</span></div></div>' +
@@ -687,7 +703,7 @@ function aDashboard(body) {
       '<div class="side"><div class="panel"><h3>Pending Approval</h3>' + (pend.length ? pend.slice(0, 6).map(function (s) {
         return '<div class="item"><b>Toolbox ' + esc(s.toolboxNumber || '') + ' · Drawer ' + pad2(s.drawerNumber) + ' · Requested R' + pad2(s.proposedRevision) + '</b><p class="muted">' + esc(s.description) + ' · ' + esc(s.submittedBy) + ' · ' + fdt(s.submittedAt) + '</p><button class="btn" data-rev="' + s.submissionId + '">Review</button></div>';
       }).join('') : '<p class="muted">No pending submissions.</p>') + '</div>' +
-      '<div class="panel mgr"><h3>Employee Access</h3><div class="item"><strong>' + d.activeUsers + ' active</strong> <span class="muted">· ' + d.invitedUsers + ' awaiting approval</span></div><div class="gap"><button class="secondary" id="d-emp">Manage employees</button><button class="secondary" id="d-former">Former Employees</button></div></div>' +
+      '<div class="panel"><h3>Employee Access</h3><div class="item"><strong>' + d.activeUsers + ' active</strong> <span class="muted">· ' + d.invitedUsers + ' awaiting approval</span></div><div class="gap"><button class="secondary" id="d-emp">Manage employees</button><button class="secondary" id="d-former">Former Employees</button></div></div>' +
       '<div class="panel"><h3 style="color:var(--red)">Missing-tool alerts</h3><div class="muted">Alerts are e-mailed to:</div>' +
         (d.lostToolEmails ? d.lostToolEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">No address set – alerts go to the administrators.</p>') +
         '<div class="muted" style="margin-top:10px">Updated register PDF (each approval) goes to:</div>' +
@@ -772,7 +788,7 @@ function aToolbox(body, id) {
     };
     $('qr-copy').onclick = function () { copyText(d.publicUrl); };
     $('qr-open').onclick = function () { window.open(d.publicUrl, '_blank', 'noopener'); };
-    $('qr-print').onclick = function () { printQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
+    $('qr-print').onclick = function () { choosePrintQr([{ toolboxNumber: d.toolboxNumber, label: d.label, url: d.publicUrl }]); };
     $('qr-rot').onclick = function () {
       if (!confirm('Rotate the QR token? The QR code already printed on this toolbox will STOP working and a new label must be printed.')) return;
       authed('adminRotatePublicToken', d.toolboxId).then(function () { toast('QR token rotated. Print the new label.'); adminView('toolbox', d.toolboxId); }).catch(fail);
@@ -805,9 +821,47 @@ function qrSvg(url) {
   for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) path += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
   return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '" width="160" height="160" shape-rendering="crispEdges" style="display:block;margin:8px auto"><rect width="100%" height="100%" fill="#fff"/><path d="' + path + '" fill="#000"/></svg>';
 }
-function printQr(items) {
-  $('print-root').innerHTML = '<div class="pr-qr"><div class="qrsheet">' + items.map(function (t) {
-    return '<div class="qrcard">' + (LOGO ? '<img class="logo" src="' + LOGO + '" alt="">' : '') + '<div style="font-size:9pt;letter-spacing:.1em">TOOL CONTROL REGISTER</div><h2 style="margin:4px 0">Toolbox ' + esc(t.toolboxNumber || '') + '</h2><div>' + esc(t.label) + '</div>' + qrSvg(t.url) + '<div style="font-size:8pt">Scan to view the approved drawer photo register (read-only)</div></div>'; }).join('') + '</div></div>';
+/** Asks which label size to print. */
+function choosePrintQr(items) {
+  if (!items || !items.length) { toast('No QR codes to print.'); return; }
+  openModal('Print QR label' + (items.length > 1 ? 's (' + items.length + ')' : ''),
+    '<p>Choose the label size:</p>' +
+    '<button class="btn big" id="pq-large" style="width:100%;margin-bottom:10px">Large — ¼ of an A4 sheet (105 × 148 mm)</button>' +
+    '<p class="muted" style="margin:-4px 0 14px">For A4 full-sheet self-adhesive label paper (210 × 297 mm). 4 labels per sheet — cut along the dashed lines. In the print window set <b>Scale 100%</b> and <b>Margins: None</b>.</p>' +
+    '<button class="secondary big" id="pq-small" style="width:100%;margin-bottom:10px">Small — compact label (original size)</button>' +
+    '<p class="muted" style="margin:-4px 0 4px">About 6 × 8 cm, several per page.</p>');
+  $('pq-large').onclick = function () { closeModal(); printQr(items, 'large'); };
+  $('pq-small').onclick = function () { closeModal(); printQr(items, 'small'); };
+}
+
+/** QR labels. large: exactly 1/4 of A4 (105 x 148.5 mm), 4 per sheet for full-sheet A4 label paper. small: original compact card. */
+function printQr(items, size) {
+  var st = document.getElementById('lbl-page-style');
+  if (!st) { st = document.createElement('style'); st.id = 'lbl-page-style'; document.head.appendChild(st); }
+  if (size !== 'large') {
+    st.textContent = '';
+    $('print-root').innerHTML = '<div class="pr-qr"><div class="qrsheet">' + items.map(function (t) {
+      return '<div class="qrcard">' + (LOGO ? '<img class="logo" src="' + LOGO + '" alt="">' : '') + '<div style="font-size:9pt;letter-spacing:.1em">TOOL CONTROL REGISTER</div><h2 style="margin:4px 0">Toolbox ' + esc(t.toolboxNumber || '') + '</h2><div>' + esc(t.label) + '</div>' + qrSvg(t.url) + '<div style="font-size:8pt">Scan to view the approved drawer photo register (read-only)</div></div>'; }).join('') + '</div></div>';
+    printWhenReady();
+    return;
+  }
+  var pages = [];
+  for (var i = 0; i < items.length; i += 4) pages.push(items.slice(i, i + 4));
+  $('print-root').innerHTML = pages.map(function (pg) {
+    var cells = pg.map(function (t) {
+      return '<div class="lbl">' + (LOGO ? '<img class="lbl-logo" src="' + LOGO + '" alt="">' : '') +
+        '<div class="lbl-org">PACIFIC CROWN HELICOPTERS</div><div class="lbl-sub">TOOL CONTROL REGISTER</div>' +
+        '<div class="lbl-no">Toolbox ' + esc(t.toolboxNumber || '') + '</div><div class="lbl-name">' + esc(t.label || '') + '</div>' +
+        '<div class="lbl-qr">' + qrSvg(t.url) + '</div>' +
+        '<div class="lbl-foot">Scan to view the approved drawer photo register (read-only)</div></div>';
+    });
+    while (cells.length < 4) cells.push('<div class="lbl lbl-empty"></div>');
+    return '<div class="lblpage">' + cells.join('') + '</div>';
+  }).join('');
+  st.textContent = '@page{size:A4 portrait;margin:0}';
+  document.body.classList.add('printing-labels');
+  var done = function () { st.textContent = ''; document.body.classList.remove('printing-labels'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
   printWhenReady();
 }
 
@@ -871,12 +925,12 @@ function aEmployees(body, focus) {
           (u.pinLocked ? '<span class="pill red">PIN LOCKED</span>' : !u.hasPin ? '<span class="pill grey">NO PIN</span>' : u.pinMustChange ? '<span class="pill pending">TEMP PIN</span>' : '<span class="pill">PIN SET</span>');
         return '<tr><td><b>' + esc(u.displayName) + '</b><div class="muted">' + esc(u.email) + (u.employeeNo ? ' · Emp ' + esc(u.employeeNo) : '') + (u.toolTagNo ? ' · Tag ' + esc(u.toolTagNo) : '') + '</div></td><td>' + esc(ROLE_LABEL[u.role] || u.role) + '</td><td>' + pill(u.status) + '</td><td>' + pinInfo + '</td>' +
           '<td class="hide-sm">' + (u.toolboxes.map(function (t) { return esc((t.toolboxNumber || '') + ' ' + (t.label || '')); }).join('<br>') || '—') + '</td><td class="hide-sm">' + fdt(u.lastLoginAt) + '</td><td><div class="gap">' +
-          (isFormer ? '<button class="secondary" data-react="' + u.userId + '">Reactivate</button>' :
-            (u.status === 'INVITED' ? '<button class="btn" data-act="' + u.userId + '">Approve access</button>' : '') + (u.role === 'MECHANIC' ? '<button class="secondary" data-pin="' + u.userId + '">' + (u.hasPin ? 'Reset PIN' : 'Issue PIN') + '</button>' : '') + '<button class="secondary" data-edit="' + u.userId + '">Edit</button><button class="secondary danger" data-deact="' + u.userId + '">Deactivate</button>') +
+          (isFormer ? '<button class="secondary mgr" data-react="' + u.userId + '">Reactivate</button>' :
+            (u.status === 'INVITED' ? '<button class="btn mgr" data-act="' + u.userId + '">Approve access</button>' : '') + (u.role === 'MECHANIC' ? '<button class="secondary mgr" data-pin="' + u.userId + '">' + (u.hasPin ? 'Reset PIN' : 'Issue PIN') + '</button>' : '') + '<button class="secondary mgr" data-edit="' + u.userId + '">Edit</button><button class="secondary danger mgr" data-deact="' + u.userId + '">Deactivate</button>') +
           '</div></td></tr>'; }).join('') : '<tr><td colspan="7" class="empty">None.</td></tr>';
     };
     var head = '<thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Login / PIN</th><th class="hide-sm">Toolboxes</th><th class="hide-sm">Last sign-in</th><th></th></tr></thead>';
-    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Employees &amp; Access</h3><div class="muted">Only administrators create, approve, assign and deactivate accounts. There is no self-registration.</div></div><div class="gap"><button class="secondary" id="e-shared">Same PIN for all mechanics</button><button class="secondary" id="e-pins">Issue individual PINs</button><button class="btn" id="e-add">+ Add employee</button></div></div>' +
+    body.innerHTML = '<div class="panel"><div class="row"><div><h3>Employees &amp; Access</h3><div class="muted">Only the administrator and the Quality Manager register mechanics. A welcome e-mail with the app link, login name and PIN is sent automatically. There is no self-registration.</div></div><div class="gap"><button class="secondary mgr" id="e-shared">Same PIN for all mechanics</button><button class="secondary mgr" id="e-pins">Issue individual PINs</button><button class="btn" id="e-add">+ Add employee</button></div></div>' +
       '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(act, false) + '</tbody></table></div></div>' +
       '<div class="panel" style="margin-top:14px" id="former"><h3>Former Employees</h3><div class="muted">Deactivated accounts: access revoked; records, photos and history are preserved. Visible to administrators only.</div>' +
       '<div class="tablewrap"><table class="tbl" style="margin-top:12px">' + head + '<tbody>' + rows(former, true) + '</tbody></table></div></div>';
@@ -931,17 +985,18 @@ function employeeForm(u) {
   var boxes = (S.allBoxes || []).filter(function (t) { return t.status !== 'ARCHIVED'; });
   var have = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : [];
   var canSub = u ? (u.toolboxes.length ? u.toolboxes[0].canSubmit : true) : true;
-  openModal(u ? 'Edit employee' : 'Add Employee — Admin Only', '<form id="ef">' +
+  var qm = S.user.role === 'QUALITY';
+  openModal(u ? 'Edit employee' : (qm ? 'Register Mechanic' : 'Add Employee'), '<form id="ef">' +
     '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : '') + '">' +
-    '<label for="ef-email">E-mail (used for sign-in codes)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
+    '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
     '<div class="compare"><div><label for="ef-emp">Employee No. (optional)</label><input class="field" id="ef-emp" maxlength="20" value="' + esc(u ? u.employeeNo || '' : '') + '"></div>' +
     '<div><label for="ef-tag">Tool Tag No. (optional)</label><input class="field" id="ef-tag" maxlength="20" value="' + esc(u ? u.toolTagNo || '' : '') + '"></div></div>' +
     (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
-    '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Mechanic</option><option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option></select>' +
+    '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Mechanic</option>' + (qm ? '' : '<option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option>') + '</select>' +
     '<label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
       return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
     '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label>' +
-    (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Approve and activate now (sends an access e-mail). Untick to create as INVITED awaiting approval.</label>') +
+    (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Activate now and send the welcome e-mail (app link, login name, PIN and instructions). Untick to create as INVITED awaiting approval.</label>') +
     '<div class="banner">No automatic registration from the personnel matrix. Verify the person before granting access.</div>' +
     '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">' + (u ? 'Save' : 'Create employee') + '</button></div></form>');
   $('ef').onsubmit = function (e) {
@@ -949,7 +1004,8 @@ function employeeForm(u) {
     var tbs = Array.prototype.slice.call(document.querySelectorAll('input[name=ef-tb]:checked')).map(function (x) { return x.value; });
     var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
       : authed('adminCreateEmployee', { displayName: $('ef-name').value, email: $('ef-email').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value, toolboxIds: tbs, canSubmit: $('ef-sub').checked, activateNow: $('ef-act').checked });
-    p.then(function () { closeModal(); toast(u ? 'Employee updated.' : 'Employee created.'); adminView('employees'); }).catch(fail);
+    var actNow = !u && $('ef-act').checked;
+    p.then(function () { closeModal(); toast(u ? 'Employee updated.' : (actNow ? 'Employee created. Welcome e-mail sent.' : 'Employee created (awaiting approval).')); adminView('employees'); }).catch(fail);
   };
 }
 
@@ -1001,7 +1057,7 @@ function aQr(body) {
         return '<div class="qrcard">' + (LOGO ? '<img class="logo" src="' + LOGO + '" alt="">' : '') + '<div class="eyebrow">Tool Control Register</div><h3 style="margin:4px 0">Toolbox ' + esc(t.toolboxNumber || '') + '</h3><div>' + esc(t.label) + '</div>' + qrImg(t.url, 4) +
           '<div class="gap" style="justify-content:center"><button class="secondary" data-copy="' + esc(t.url) + '">Copy link</button>' + (t.publicEnabled ? '' : '<span class="pill grey">QR OFF</span>') + '</div></div>'; }).join('') + '</div></div>';
     body.querySelectorAll('[data-copy]').forEach(function (b) { b.onclick = function () { copyText(b.dataset.copy); }; });
-    $('q-print').onclick = function () { printQr(items); };
+    $('q-print').onclick = function () { choosePrintQr(items); };
   }).catch(function (e) { body.innerHTML = '<div class="alert red">' + esc(e.message) + '</div>'; });
 }
 
