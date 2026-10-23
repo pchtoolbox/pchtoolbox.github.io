@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>SIMULATION – Engineer view</title></head>
+<body style="font-family:Arial,sans-serif;background:#eaf0f5;color:#25394e;text-align:center;padding:60px 20px">Loading the engineer simulation…
+<script>
+/* PCH Toolbox Control – ENGINEER VIEW SIMULATION (training).
+   Loads the live app (index.html) and replaces all server calls with demo data. Nothing is saved or sent.
+   Only "Find Tool Tag Owner" asks the real system, using the session already signed in on this browser (admin / Quality Manager). */
+(function () {
+  var SIM = function () {
+    var realToken = null; try { realToken = localStorage.getItem('pchtc_session'); } catch (e) { }
+    var mem = { pchtc_session: 'SIM' };
+    store = function (k, v) { if (v === undefined) return mem[k] || null; if (v === null) delete mem[k]; else mem[k] = v; };
+    var now = Date.now(), iso = function (d) { return new Date(now - d * 86400000).toISOString(); };
+    var ME = { userId: 'U-SIM', displayName: 'Demo Engineer', email: '', role: 'MECHANIC', loginName: 'demo', toolTagNo: '99', mustChangePin: false, hasPassword: false, viewOnly: false };
+    var LT = { reportId: 'LT-DEMO-0001', drawerNumber: 3, toolDescription: '10 mm combination spanner', reportedAt: iso(0.2), status: 'OPEN', mine: true, qmNotes: '' };
+    var drawers = [3, 1, 2, 1, 1, 2, 1, 1].map(function (r, i) { return { drawerId: 'D' + (i + 1), drawerNumber: i + 1, approvedRevision: r, approvedAt: iso(10 + i), hasPhoto: true, pending: [] }; });
+    var box = { toolboxId: 'TB-DEMO', toolboxNumber: '000', label: 'Demo toolbox', status: 'ACTIVE', isTest: true, documentRevision: 3, approvedAt: iso(3), drawerCount: 8, withPhoto: 8, pendingCount: 0, openDiscrepancies: 1, lastCheck: { checkedAt: iso(1), result: 'ALL_PRESENT' } };
+    function svg(n) {
+      var s = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#2f3a46"/><rect x="14" y="14" width="372" height="272" rx="8" fill="#1f8a70"/>' +
+        '<rect x="34" y="40" width="' + (140 + n * 7) + '" height="22" rx="4" fill="#cfd6de"/><rect x="34" y="88" width="170" height="18" rx="4" fill="#cfd6de"/>' +
+        '<rect x="230" y="40" width="120" height="70" rx="6" fill="#cfd6de"/><rect x="34" y="140" width="' + (220 - n * 6) + '" height="26" rx="4" fill="#ffd36b"/>' +
+        '<rect x="290" y="140" width="60" height="110" rx="6" fill="#cfd6de"/><rect x="34" y="200" width="200" height="20" rx="4" fill="#cfd6de"/></svg>';
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+    }
+    var F = {
+      getMe: function () { return ME; },
+      logout: function () { return { ok: true }; },
+      listMyToolboxes: function () { return [box]; },
+      getToolboxDetail: function () { var d = JSON.parse(JSON.stringify(box)); d.drawers = drawers; d.history = []; d.openReports = [LT]; d.canSubmit = true; d.canManage = false; d.publicUrl = ''; return d; },
+      getDrawerImage: function (t, id) { return { dataUrl: svg(Number(String(id).slice(1))) }; },
+      getSubmissionImage: function () { return { dataUrl: svg(4) }; },
+      getLostToolImage: function () { return { dataUrl: svg(3) }; },
+      listSubmissions: function () { return []; },
+      getRevisionHistory: function () { return drawers.filter(function (d) { return d.approvedRevision > 1; }).map(function (d) { return { occurredAt: d.approvedAt, eventType: 'APPROVED', drawerNumber: d.drawerNumber, revision: d.approvedRevision }; }); },
+      listLostTools: function () { return [{ reportId: LT.reportId, toolboxId: 'TB-DEMO', toolboxNumber: '000', drawerNumber: 3, toolDescription: LT.toolDescription, reportedBy: 'Demo Engineer', reportedAt: LT.reportedAt, status: LT.status, resolution: '' }]; },
+      reportMissingTool: function () { return { reportId: 'LT-DEMO-0002', status: 'OPEN' }; },
+      proposeLostToolResolution: function () { LT.status = 'AWAITING_QM'; return { status: 'AWAITING_QM' }; },
+      recordToolCheck: function (t, i) { return { checkId: 'CHK-DEMO', checkedAt: new Date().toISOString(), result: i.result }; },
+      submitDrawerPhoto: function () { return { submissionId: 'SUB-DEMO0001', status: 'PENDING', proposedRevision: 4 }; },
+      changeMyPin: function () { return { ok: true }; }
+    };
+    var real = window.google;
+    window.google = { script: { run: (function mk(ok, ko) {
+      return new Proxy({}, { get: function (_, fn) {
+        if (fn === 'withSuccessHandler') return function (h) { return mk(h, ko); };
+        if (fn === 'withFailureHandler') return function (h) { return mk(ok, h); };
+        return function () {
+          var args = Array.prototype.slice.call(arguments);
+          var fail = function (e) { if (ko) ko(e); };
+          if (fn === 'getAppAssets' && real) return real.script.run.withSuccessHandler(ok).withFailureHandler(fail).getAppAssets();
+          if (fn === 'findToolTag') {
+            if (!realToken || !real) { fail(new Error('Tag search needs the real data: sign in to the dashboard on this browser first (pchtoolbox.github.io/?admin=1), then reopen this page.')); return; }
+            return real.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+              var m = String((e && e.message) || e); fail(new Error(/SESSION_EXPIRED/.test(m) ? 'Your dashboard sign-in has expired. Sign in again at pchtoolbox.github.io/?admin=1, then reopen this page.' : m));
+            }).findToolTag(realToken, args[1]);
+          }
+          setTimeout(function () { try { var f = F[fn]; if (!f) throw new Error('Not available in the simulation.'); ok(f.apply(null, args)); } catch (e) { fail(e); } }, 250);
+        };
+      } });
+    })(null, null) } };
+    var b = document.createElement('div');
+    b.textContent = 'SIMULATION – engineer view · demo data · nothing is saved or sent';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#f59e0b;color:#1d2733;font:700 12px Inter,Arial,sans-serif;text-align:center;padding:6px';
+    document.body.appendChild(b); document.body.style.paddingTop = '26px';
+  };
+  fetch('index.html?v=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (src) {
+    var k = src.lastIndexOf('bootStatic();');
+    if (k < 0) throw new Error('App not found');
+    src = src.slice(0, k) + '(' + SIM.toString() + ')();\n' + src.slice(k);
+    src = src.replace('<title>PCH Toolbox Control</title>', '<title>SIMULATION – Engineer view</title>');
+    document.open(); document.write(src); document.close();
+  }).catch(function (e) { document.body.textContent = 'Could not load the simulation: ' + e.message; });
+})();
+</script></body></html>
