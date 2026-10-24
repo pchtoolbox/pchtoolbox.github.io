@@ -581,7 +581,8 @@ function mechTab() {
         (d.lastCheck ? '<p class="muted">Last check: ' + fdt(d.lastCheck.checkedAt) + ' · ' + (STATUS_TEXT[d.lastCheck.result] || d.lastCheck.result) + '</p>' : '<p class="muted">No toolbox check recorded yet.</p>') + '</div>';
       if (S.user.toolTagNo) h += '<div class="banner" style="margin-top:10px">🏷 Your tool tag: <b>' + esc(S.user.toolTagNo) + '</b> – leave it in the place of any tool you borrow from a colleague.</div>';
       if (d.openReports.length) h += '<div class="alert red"><b>OPEN TOOL DISCREPANCY</b>' + d.openReports.map(function (r) { return '<div style="margin-top:8px">' + esc(r.reportId + ' · ' + r.toolDescription) + ' ' + pill(r.status) + (r.qmNotes && r.status === 'OPEN' ? '<div class="muted">Quality Manager: ' + esc(r.qmNotes) + '</div>' : '') + (r.mine && r.status === 'OPEN' ? '<button class="btn" style="margin-top:6px;width:100%" data-ltsol="' + r.reportId + '">✓ Tool found / submit solution</button>' : r.status === 'AWAITING_QM' ? '<div class="muted">Solution sent – waiting for the Quality Manager.</div>' : '') + '</div>'; }).join('') + '</div>';
-      if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 Update Drawer Photo</button>';
+      if (d.canSubmit && !d.drawers.length) h += '<div class="banner" style="margin-top:10px">👋 <b>First set-up:</b> photograph your toolbox drawer by drawer. Tap <b>📷 Photograph drawers</b>, take Drawer 01, then tap <b>Next drawer</b> after each photo. On the last drawer tap <b>Finished</b>.</div>';
+        if (d.canSubmit) h += '<button class="btn big" id="m-update" style="margin-top:12px">📷 ' + (d.drawers.length ? 'Update Drawer Photo' : 'Photograph drawers') + '</button>';
       h += '<button class="btn danger big" id="m-alert" style="margin-top:9px">⚠ Missing Tool Alert</button>' +
         '<button class="secondary big" id="m-tag" style="margin-top:9px">🔍 Find Tool Tag Owner</button>' +
         '<button class="secondary big" id="m-check" style="margin-top:9px">✓ Record Toolbox Check</button>' +
@@ -612,11 +613,17 @@ function bindDrawerButtons(root) { root.querySelectorAll('[data-upd]').forEach(f
 
 // ---------- camera upload flow ----------
 function openUpdate(drawerId) {
+    // Drawers are registered by the engineer while photographing them: "New drawer" adds the next one.
+    var dd = S.detail || { drawers: [] };
+    var lastD = dd.drawers.length ? dd.drawers[dd.drawers.length - 1] : null;
+    var nextNo = !lastD ? 1 : ((!lastD.hasPhoto && !(lastD.pending && lastD.pending.length)) ? lastD.drawerNumber : lastD.drawerNumber + 1);
+    var newOpt = dd.canSubmit ? '<option value="__new"' + (drawerId === '__new' || !dd.drawers.length ? ' selected' : '') + '>➕ New drawer (Drawer ' + pad2(nextNo) + ')</option>' : '';
+    var newDrawer = null, usedNo = null;
   var d = S.detail; if (!d) return;
   var key = uid();
   openModal('Update Drawer Photo', '<p class="muted">Request a new revision. The approved photo stays visible until an administrator approves your photo.</p>' +
     '<form id="up-form"><label for="up-drawer">Drawer</label><select class="field" id="up-drawer">' + d.drawers.map(function (x) {
-      return '<option value="' + x.drawerId + '"' + (x.drawerId === drawerId ? ' selected' : '') + '>Drawer ' + pad2(x.drawerNumber) + ' · R' + pad2(x.approvedRevision) + '</option>'; }).join('') + '</select>' +
+      return '<option value="' + x.drawerId + '"' + (x.drawerId === drawerId ? ' selected' : '') + '>Drawer ' + pad2(x.drawerNumber) + ' · R' + pad2(x.approvedRevision) + '</option>'; }).join('') + newOpt + '</select>' +
     '<label for="up-file">New photo (camera or gallery)</label><input class="field" type="file" id="up-file" accept="image/*" capture="environment" required>' +
     '<img id="up-prev" class="hidden" alt="Preview of the new drawer photo" style="width:100%;border-radius:9px;margin-bottom:10px">' +
     '<label for="up-note">Change description</label><textarea class="field" id="up-note" required maxlength="500" placeholder="Describe added, removed or repositioned tools (include tool ID / P/N if any)"></textarea>' +
@@ -639,12 +646,25 @@ function openUpdate(drawerId) {
     var btn = $('up-go'); btn.disabled = true; btn.textContent = 'Uploading…';
     $('up-prog').classList.remove('hidden'); var bar = $('up-prog').firstChild; bar.style.width = '35%';
     var t = setInterval(function () { var w = parseFloat(bar.style.width); if (w < 90) bar.style.width = (w + 5) + '%'; }, 400);
-    authed('submitDrawerPhoto', { toolboxId: d.toolboxId, drawerId: $('up-drawer').value, description: note, photo: prepared.photo, thumb: prepared.thumb, idempotencyKey: key })
+    (($('up-drawer').value === '__new') ? (newDrawer ? Promise.resolve(newDrawer) : authed('addMyDrawer', d.toolboxId).then(function (nd) { newDrawer = nd; return nd; }))
+        : Promise.resolve({ drawerId: $('up-drawer').value }))
+      .then(function (dr) { var sel = d.drawers.filter(function (x) { return x.drawerId === dr.drawerId; })[0]; usedNo = dr.drawerNumber || (sel ? sel.drawerNumber : null);
+        return authed('submitDrawerPhoto', { toolboxId: d.toolboxId, drawerId: dr.drawerId, description: note, photo: prepared.photo, thumb: prepared.thumb, idempotencyKey: key }); })
       .then(function (r) {
         clearInterval(t); bar.style.width = '100%';
         $('modal-body').innerHTML = '<div class="alert ok" role="status"><b>Saved — awaiting approval.</b></div><div class="report" style="margin-top:10px">' +
-          kv('Submission ID', r.submissionId) + kv('Status', 'PENDING') + kv('Proposed revision', 'Rev ' + pad2(r.proposedRevision)) + '</div>' +
-          '<p class="muted">An administrator has been notified. You will receive an e-mail when it is approved or rejected.</p><div class="actionline"><button class="btn" id="up-done">Done</button></div>';
+          (usedNo ? kv('Drawer', pad2(usedNo)) : '') + kv('Submission ID', r.submissionId) + kv('Status', 'PENDING') + kv('Proposed revision', 'Rev ' + pad2(r.proposedRevision)) + '</div>' +
+          '<p class="muted">An administrator has been notified. You will receive an e-mail when it is approved or rejected.</p>' +
+          (S.user.role === 'MECHANIC' ? '<p style="margin-top:12px"><b>More drawers in this toolbox?</b></p><div class="actionline" style="flex-wrap:wrap"><button class="btn" id="up-next">📷 Next drawer</button><button class="secondary" id="up-done">✓ Finished – that was the last drawer</button></div>'
+            : '<div class="actionline"><button class="btn" id="up-done">Done</button></div>');
+        if ($('up-next')) $('up-next').onclick = function () {
+          $('up-next').disabled = true;
+          authed('getToolboxDetail', d.toolboxId).then(function (nd) {
+            S.detail = nd;
+            var nx = nd.drawers.filter(function (x) { return usedNo && x.drawerNumber > usedNo; })[0];
+            closeModal(); openUpdate(nx ? nx.drawerId : '__new');
+          }).catch(fail);
+        };
         $('up-done').onclick = function () { closeModal(); if (S.user.role !== 'MECHANIC') adminView(S.view, S.view === 'toolbox' ? d.toolboxId : undefined); else mechTab(); };
       }).catch(function (err) { clearInterval(t); btn.disabled = false; btn.textContent = 'Submit Revision Request'; $('up-prog').classList.add('hidden'); fail(err); });
   };
@@ -1145,27 +1165,39 @@ function employeeForm(u, pre) {
   var canSub = u ? (u.toolboxes.length ? u.toolboxes[0].canSubmit : true) : true;
   var qm = S.user.role === 'QUALITY';
   openModal(u ? 'Edit employee' : (pre ? 'Finish set-up · Toolbox ' + pre.number : (qm ? 'Register Engineer' : 'Add Employee')), '<form id="ef">' +
-    (pre ? '<div class="banner" style="background:#fff4e8;border-color:#fdba74;color:#9a3412"><b>AWAITING SETUP</b> – toolbox ' + esc(pre.boxName) + '. Pre-filled from the register; complete the blank fields (e-mail first) and create the employee. The toolbox becomes ACTIVE, gets its drawers and the engineer receives the access e-mail to take the photos. <a href="#" onclick="closeModal();adminView(\'toolbox\',\'' + pre.toolboxId + '\');return false">Open toolbox details instead</a></div>' : '') +
+    (pre ? '<div class="banner" style="background:#fff4e8;border-color:#fdba74;color:#9a3412"><b>AWAITING SETUP</b> – toolbox ' + esc(pre.boxName) + '. Pre-filled from the register; complete the blank fields (e-mail first) and create the employee. The toolbox becomes ACTIVE and the engineer receives the access e-mail; he registers each drawer himself while taking the photos. <a href="#" onclick="closeModal();adminView(\'toolbox\',\'' + pre.toolboxId + '\');return false">Open toolbox details instead</a></div>' : '') +
     '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : (pre ? pre.name : '')) + '">' +
     '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
     '<div class="compare"><div><label for="ef-emp">Employee No.' + (u ? '' : ' (required)') + '</label><input class="field" id="ef-emp" maxlength="20" ' + (u ? '' : 'required ') + 'value="' + esc(u ? u.employeeNo || '' : (pre ? pre.emp : '')) + '"></div>' +
     '<div><label for="ef-tag">Tool Tag No.' + (u ? '' : ' (required)') + '</label><input class="field" id="ef-tag" maxlength="20" ' + (u ? '' : 'required ') + 'value="' + esc(u ? u.toolTagNo || '' : (pre ? pre.tag : '')) + '"></div></div>' +
     (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
     '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Engineer</option>' + (qm ? '' : '<option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option>') + '</select>' +
-    (pre ? '<label for="ef-drw">Number of drawers in toolbox ' + esc(pre.number) + '</label><input class="field" id="ef-drw" type="number" min="1" max="30" required>' : '') +
-    '<label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
+    '<div id="ef-tbwrap"><label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
       return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 || (pre && pre.toolboxId === t.toolboxId) ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
-    '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label>' +
+    '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label></div>' +
+      '<div class="banner" id="ef-ownbox" style="margin-bottom:13px"></div>' +
     (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Activate now and send the welcome e-mail (app link, login name, PIN and instructions). Untick to create as INVITED awaiting approval.</label>') +
     '<div class="banner">No automatic registration from the personnel matrix. Verify the person before granting access.</div>' +
     '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">' + (u ? 'Save' : 'Create employee') + '</button></div></form>');
-  $('ef').onsubmit = function (e) {
+  var ownTb = u && u.toolboxes.length ? u.toolboxes[0] : null;
+    var syncRole = function () {
+      var mech = $('ef-role').value === 'MECHANIC';
+      $('ef-tbwrap').style.display = mech ? 'none' : '';
+      $('ef-ownbox').style.display = mech ? '' : 'none';
+      $('ef-ownbox').innerHTML = u ? (ownTb ? '🧰 Own toolbox: <b>' + esc((ownTb.toolboxNumber || '') + ' · ' + (ownTb.label || '')) + '</b>' : 'No toolbox linked yet.')
+        : (pre ? '🧰 Own toolbox: <b>' + esc(pre.boxName) + '</b>. The engineer registers the drawers while taking the photos.'
+          : '🧰 The engineer\'s own toolbox is linked automatically: the toolbox with the same number as the Employee No. (created if it does not exist yet). The engineer registers the drawers while taking the photos.');
+    };
+    $('ef-role').onchange = syncRole; syncRole();
+    $('ef').onsubmit = function (e) {
     e.preventDefault();
     var tbs = Array.prototype.slice.call(document.querySelectorAll('input[name=ef-tb]:checked')).map(function (x) { return x.value; });
+      if ($('ef-role').value === 'MECHANIC') tbs = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : (pre ? [pre.toolboxId] : []);
     var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
       : authed('adminCreateEmployee', { displayName: $('ef-name').value, email: $('ef-email').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value, toolboxIds: tbs, canSubmit: $('ef-sub').checked, activateNow: $('ef-act').checked });
     var actNow = !u && $('ef-act').checked;
-    if (pre) p = p.then(function (r) { var up = { drawerCount: $('ef-drw').value, status: 'ACTIVE', publicEnabled: true }; if (r && r.userId) up.mechanicUserId = r.userId; return authed('adminUpdateToolbox', pre.toolboxId, up); });
+    // Engineers: the server activates and links the toolbox. Other roles: activate the box here.
+      if (pre && $('ef-role').value !== 'MECHANIC') p = p.then(function () { return authed('adminUpdateToolbox', pre.toolboxId, { status: 'ACTIVE', publicEnabled: true }); });
     p.then(function () { closeModal(); toast(u ? 'Employee updated.' : (actNow ? 'Employee created. Welcome e-mail sent.' : 'Employee created (awaiting approval).')); adminView('employees'); }).catch(fail);
   };
 }
