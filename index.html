@@ -69,6 +69,11 @@ img{max-width:100%}
 .pill.red{background:var(--redbg);color:var(--red)}
 .pill.grey{background:#edf1f5;color:#5d6f82}
 .pill.blue{background:#e6f0fb;color:var(--blue)}
+.pill.orange{background:#ffe4cc;color:#c2410c;box-shadow:inset 0 0 0 1px #fdba74}
+.pill.purple{background:#efe9fd;color:#6d3fc0}
+.pill.st::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:1px}
+tr.st-DRAFT td{background:#fff8f1}
+tr.st-DRAFT td:first-child{box-shadow:inset 3px 0 0 #f97316}
 .rev{font-size:11px;color:var(--blue);font-weight:800}
 .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:15px}
 .drawer{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}
@@ -258,10 +263,10 @@ function fd(iso) { return iso ? DF.format(new Date(iso)) : '—'; }
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
 function uid() { try { return crypto.randomUUID(); } catch (e) { var a = new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); } }
 function boxName(b) { return (b.toolboxNumber ? b.toolboxNumber + ' · ' : '') + (b.label || ''); }
-var STATUS_PILL = { ACTIVE: '', TEST: 'blue', DRAFT: 'grey', ARCHIVED: 'grey', PENDING: 'pending', APPROVED: '', REJECTED: 'red', INVITED: 'pending', INACTIVE: 'grey', OPEN: 'red', CLOSED_FOUND: '', CLOSED_NOT_FOUND: 'grey', AWAITING_QM: 'pending', CLOSED_OTHER: '', CLOSED_BY_QM: 'grey', MISSING_TOOL_UPDATE: 'pending', MISSING_TOOL_RETURNED: 'red', SUBMITTED: 'pending', ARCHIVED_EV: 'grey', MISSING_TOOL_REPORTED: 'red', MISSING_TOOL_CLOSED: 'grey', PHOTO_REMOVED: 'grey', ALL_PRESENT: '', EXCEPTIONS: 'red' };
-var STATUS_TEXT = { ALL_PRESENT: 'ALL PRESENT', EXCEPTIONS: 'EXCEPTIONS', CLOSED_FOUND: 'CLOSED – FOUND', CLOSED_NOT_FOUND: 'CLOSED – NOT FOUND', OPEN: 'OPEN TOOL DISCREPANCY', AWAITING_QM: 'AWAITING QUALITY MANAGER', CLOSED_OTHER: 'CLOSED – SOLUTION ACCEPTED', CLOSED_BY_QM: 'CLOSED BY QUALITY MANAGER', MISSING_TOOL_UPDATE: 'SOLUTION SENT', MISSING_TOOL_RETURNED: 'RETURNED TO ENGINEER', PENDING: 'AWAITING APPROVAL', MISSING_TOOL_REPORTED: 'MISSING TOOL', MISSING_TOOL_CLOSED: 'DISCREPANCY CLOSED', PHOTO_REMOVED: 'PHOTO REMOVED' };
+var STATUS_PILL = { ACTIVE: '', APPROVED: '', ALL_PRESENT: '', CLOSED_FOUND: '', CLOSED_OTHER: '', DRAFT: 'orange', PENDING: 'pending', SUBMITTED: 'pending', MISSING_TOOL_UPDATE: 'pending', INVITED: 'purple', AWAITING_QM: 'purple', TEST: 'blue', REJECTED: 'red', OPEN: 'red', MISSING_TOOL_REPORTED: 'red', MISSING_TOOL_RETURNED: 'red', EXCEPTIONS: 'red', ARCHIVED: 'grey', INACTIVE: 'grey', CLOSED_NOT_FOUND: 'grey', CLOSED_BY_QM: 'grey', ARCHIVED_EV: 'grey', MISSING_TOOL_CLOSED: 'grey', PHOTO_REMOVED: 'grey' };
+var STATUS_TEXT = { DRAFT: 'AWAITING SETUP', ALL_PRESENT: 'ALL PRESENT', EXCEPTIONS: 'EXCEPTIONS', CLOSED_FOUND: 'CLOSED – FOUND', CLOSED_NOT_FOUND: 'CLOSED – NOT FOUND', OPEN: 'OPEN TOOL DISCREPANCY', AWAITING_QM: 'AWAITING QUALITY MANAGER', CLOSED_OTHER: 'CLOSED – SOLUTION ACCEPTED', CLOSED_BY_QM: 'CLOSED BY QUALITY MANAGER', MISSING_TOOL_UPDATE: 'SOLUTION SENT', MISSING_TOOL_RETURNED: 'RETURNED TO ENGINEER', PENDING: 'AWAITING APPROVAL', MISSING_TOOL_REPORTED: 'MISSING TOOL', MISSING_TOOL_CLOSED: 'DISCREPANCY CLOSED', PHOTO_REMOVED: 'PHOTO REMOVED' };
 function evTitle(h) { return /^MISSING_TOOL/.test(h.eventType) ? (h.drawerNumber ? 'Drawer ' + pad2(h.drawerNumber) : 'Toolbox') : 'Drawer ' + pad2(h.drawerNumber) + ' · Rev ' + pad2(h.revision); }
-function pill(st) { return '<span class="pill ' + (STATUS_PILL[st] || 'grey') + '">' + esc(STATUS_TEXT[st] || st) + '</span>'; }
+function pill(st) { return '<span class="pill st ' + (STATUS_PILL[st] || 'grey') + '">' + esc(STATUS_TEXT[st] || st) + '</span>'; }
 
 // ---------- server calls ----------
 function api(fn) {
@@ -810,12 +815,12 @@ function aDashboard(body) {
   Promise.all([authed('adminGetDashboard'), authed('adminListToolboxes'), authed('listSubmissions', { status: 'PENDING' })]).then(function (r) {
     var d = r[0], tbs = r[1], pend = r[2]; refreshBadge(d.pending);
     body.innerHTML = '<div class="panel"><div class="row"><div><h3>Toolbox Overview</h3><div class="muted">Approved photos, pending requests and revision tracking</div></div><div class="gap"><button class="secondary" id="d-tag">🔍 Find tool tag</button><button class="secondary" id="d-qr">▤ Print QR labels</button><button class="btn" id="d-add">+ Add employee</button></div></div></div>' +
-      '<div class="stats"><div class="panel metric"><div class="muted">Toolboxes</div><strong>' + d.toolboxesActive + '</strong><span class="green" style="font-size:11px">Active · ' + d.toolboxesDraft + ' draft</span></div>' +
+      '<div class="stats"><div class="panel metric"><div class="muted">Toolboxes</div><strong>' + d.toolboxesActive + '</strong><span class="green" style="font-size:11px">Active</span>' + (d.toolboxesDraft ? ' <span style="font-size:11px;color:#c2410c;font-weight:800">· ' + d.toolboxesDraft + ' awaiting setup</span>' : '') + '</div>' +
       '<div class="panel metric"><div class="muted">Pending reviews</div><strong>' + d.pending + '</strong><span class="muted">Action needed</span></div>' +
       '<div class="panel metric"><div class="muted">Open discrepancies</div><strong style="color:' + (d.openDiscrepancies ? 'var(--red)' : 'inherit') + '">' + d.openDiscrepancies + '</strong><span class="muted">Lost tools</span></div></div>' +
       '<div class="layout"><div><div class="row"><h3>Toolbox Register</h3><span class="pill">Published record</span></div><div class="panel tablewrap" style="margin-top:12px;padding:8px"><table class="tbl"><thead><tr><th>Toolbox</th><th>Status</th><th>Rev</th><th class="hide-sm">Photos</th><th class="hide-sm">Pending</th><th class="hide-sm">Last check</th></tr></thead><tbody>' +
       tbs.filter(function (t) { return t.status !== 'ARCHIVED'; }).map(function (t) {
-        return '<tr class="click" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b> ' + esc(t.label) + (t.openDiscrepancies ? ' <span class="pill red">OPEN</span>' : '') + '</td><td>' + pill(t.status) + '</td><td>R' + pad2(t.documentRevision) + '</td>' +
+        return '<tr class="click st-' + t.status + '" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b> ' + esc(t.label) + (t.openDiscrepancies ? ' <span class="pill red">OPEN</span>' : '') + '</td><td>' + pill(t.status) + '</td><td>R' + pad2(t.documentRevision) + '</td>' +
           '<td class="hide-sm">' + t.withPhoto + '/' + t.drawerCount + '</td><td class="hide-sm">' + (t.pendingCount ? '<span class="pill pending">' + t.pendingCount + '</span>' : '0') + '</td><td class="hide-sm">' + (t.lastCheck ? fd(t.lastCheck.checkedAt) : '—') + '</td></tr>';
       }).join('') + '</tbody></table></div></div>' +
       '<div class="side"><div class="panel"><h3>Pending Approval</h3>' + (pend.length ? pend.slice(0, 6).map(function (s) {
@@ -849,7 +854,7 @@ function aToolboxes(body) {
     var draw = function () {
       var q = $('tb-q').value.toLowerCase(), arch = $('tb-arch').checked;
       $('tb-rows').innerHTML = tbs.filter(function (t) { return (arch || t.status !== 'ARCHIVED') && (!q || (t.toolboxNumber + ' ' + t.label).toLowerCase().indexOf(q) > -1); }).map(function (t) {
-        return '<tr class="click" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b></td><td>' + esc(t.label) + (t.status === 'DRAFT' ? '<div class="muted">' + esc(t.notes || '') + '</div>' : '') + '</td><td>' + pill(t.status) + '</td><td>REV ' + pad2(t.documentRevision) + '<div class="muted">' + fd(t.approvedAt) + '</div></td>' +
+        return '<tr class="click st-' + t.status + '" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b></td><td>' + esc(t.label) + (t.status === 'DRAFT' ? '<div class="muted">' + esc(t.notes || '') + '</div>' : '') + '</td><td>' + pill(t.status) + '</td><td>REV ' + pad2(t.documentRevision) + '<div class="muted">' + fd(t.approvedAt) + '</div></td>' +
           '<td class="hide-sm">' + t.drawerCount + ' / ' + t.withPhoto + '</td><td class="hide-sm">' + t.pendingCount + '</td><td class="hide-sm">' + (t.publicEnabled ? 'On' : 'Off') + '</td></tr>'; }).join('') || '<tr><td colspan="7" class="empty">No toolboxes.</td></tr>';
       $('tb-rows').querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { adminView('toolbox', r.dataset.tb); }; });
     };
