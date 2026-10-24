@@ -834,7 +834,7 @@ function aDashboard(body) {
         (d.registerEmails ? d.registerEmails.split(',').map(function (e) { return '<div class="item" style="font-size:13px">' + esc(e) + '</div>'; }).join('') : '<p class="muted">Administrators.</p>') +
         '<button class="secondary mgr" id="d-lost-mails">Edit alert e-mails</button></div>' +
       '<div class="panel"><h3>Recent activity</h3>' + d.recent.slice(0, 8).map(function (e) { return '<div class="item"><b style="font-size:12px">' + esc(e.action.replace(/_/g, ' ')) + '</b><div class="muted">' + esc(e.actor) + ' · ' + fdt(e.createdAt) + '</div></div>'; }).join('') + '</div></div></div>';
-    body.querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { adminView('toolbox', r.dataset.tb); }; });
+    body.querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { openBoxRow(r.dataset.tb); }; });
     body.querySelectorAll('[data-rev]').forEach(function (b) { b.onclick = function () { openReview(b.dataset.rev); }; });
     $('d-add').onclick = function () { employeeForm(null); };
     $('d-qr').onclick = function () { pickAndPrintQr(null); };
@@ -856,7 +856,7 @@ function aToolboxes(body) {
       $('tb-rows').innerHTML = tbs.filter(function (t) { return (arch || t.status !== 'ARCHIVED') && (!q || (t.toolboxNumber + ' ' + t.label).toLowerCase().indexOf(q) > -1); }).map(function (t) {
         return '<tr class="click st-' + t.status + '" data-tb="' + t.toolboxId + '"><td><b>' + esc(t.toolboxNumber || '—') + '</b></td><td>' + esc(t.label) + (t.status === 'DRAFT' ? '<div class="muted">' + esc(t.notes || '') + '</div>' : '') + '</td><td>' + pill(t.status) + '</td><td>REV ' + pad2(t.documentRevision) + '<div class="muted">' + fd(t.approvedAt) + '</div></td>' +
           '<td class="hide-sm">' + t.drawerCount + ' / ' + t.withPhoto + '</td><td class="hide-sm">' + t.pendingCount + '</td><td class="hide-sm">' + (t.publicEnabled ? 'On' : 'Off') + '</td></tr>'; }).join('') || '<tr><td colspan="7" class="empty">No toolboxes.</td></tr>';
-      $('tb-rows').querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { adminView('toolbox', r.dataset.tb); }; });
+      $('tb-rows').querySelectorAll('[data-tb]').forEach(function (r) { r.onclick = function () { openBoxRow(r.dataset.tb); }; });
     };
     $('tb-q').oninput = draw; $('tb-arch').onchange = draw; draw();
     $('tb-new').onclick = toolboxForm;
@@ -1125,20 +1125,36 @@ function issuePins(ids) {
 function setStatus(id, st) {
   authed('adminSetUserStatus', id, st).then(function () { toast(st === 'ACTIVE' ? 'Access approved. The employee has been e-mailed.' : 'Employee deactivated and signed out.'); adminView('employees'); }).catch(fail);
 }
-function employeeForm(u) {
+/* Toolbox rows: a box AWAITING SETUP (DRAFT) opens the pre-filled Add Employee form (admins only). */
+function openBoxRow(id) {
+  var go = function (t) {
+    if (!t || t.status !== 'DRAFT' || !S.user || S.user.role !== 'ADMIN') return adminView('toolbox', id);
+    var n = t.notes || '';
+    var g = function (re) { var m = n.match(re); return m ? m[1].trim() : ''; };
+    employeeForm(null, { toolboxId: id, number: t.toolboxNumber || '', boxName: boxName(t),
+      name: g(/Engineer: ([^.]+)\./) || (/ /.test(t.label || '') ? '' : (t.label || '')), emp: g(/Employee no\. ([^.\s]+)/) || t.toolboxNumber || '', tag: g(/Tool tag (\d+)/) });
+  };
+  var t = (S.allBoxes || []).filter(function (x) { return x.toolboxId === id; })[0];
+  if (t && t.notes !== undefined) return go(t);
+  authed('adminListToolboxes').then(function (l) { S.allBoxes = l; go(l.filter(function (x) { return x.toolboxId === id; })[0]); }).catch(fail);
+}
+function employeeForm(u, pre) {
+  pre = !u && pre ? pre : null;
   var boxes = (S.allBoxes || []).filter(function (t) { return t.status !== 'ARCHIVED'; });
   var have = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : [];
   var canSub = u ? (u.toolboxes.length ? u.toolboxes[0].canSubmit : true) : true;
   var qm = S.user.role === 'QUALITY';
-  openModal(u ? 'Edit employee' : (qm ? 'Register Engineer' : 'Add Employee'), '<form id="ef">' +
-    '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : '') + '">' +
+  openModal(u ? 'Edit employee' : (pre ? 'Finish set-up · Toolbox ' + pre.number : (qm ? 'Register Engineer' : 'Add Employee')), '<form id="ef">' +
+    (pre ? '<div class="banner" style="background:#fff4e8;border-color:#fdba74;color:#9a3412"><b>AWAITING SETUP</b> – toolbox ' + esc(pre.boxName) + '. Pre-filled from the register; complete the blank fields (e-mail first) and create the employee. The toolbox becomes ACTIVE, gets its drawers and the engineer receives the access e-mail to take the photos. <a href="#" onclick="closeModal();adminView(\'toolbox\',\'' + pre.toolboxId + '\');return false">Open toolbox details instead</a></div>' : '') +
+    '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : (pre ? pre.name : '')) + '">' +
     '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
-    '<div class="compare"><div><label for="ef-emp">Employee No. (optional)</label><input class="field" id="ef-emp" maxlength="20" value="' + esc(u ? u.employeeNo || '' : '') + '"></div>' +
-    '<div><label for="ef-tag">Tool Tag No. (optional)</label><input class="field" id="ef-tag" maxlength="20" value="' + esc(u ? u.toolTagNo || '' : '') + '"></div></div>' +
+    '<div class="compare"><div><label for="ef-emp">Employee No. (optional)</label><input class="field" id="ef-emp" maxlength="20" value="' + esc(u ? u.employeeNo || '' : (pre ? pre.emp : '')) + '"></div>' +
+    '<div><label for="ef-tag">Tool Tag No. (optional)</label><input class="field" id="ef-tag" maxlength="20" value="' + esc(u ? u.toolTagNo || '' : (pre ? pre.tag : '')) + '"></div></div>' +
     (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
     '<label for="ef-role">Role</label><select class="field" id="ef-role"><option value="MECHANIC">Engineer</option>' + (qm ? '' : '<option value="QUALITY"' + (u && u.role === 'QUALITY' ? ' selected' : '') + '>Quality Manager (view all, approve/reject, close discrepancies – no settings)</option><option value="ADMIN"' + (u && u.role === 'ADMIN' ? ' selected' : '') + '>Administrator (full control)</option>') + '</select>' +
+    (pre ? '<label for="ef-drw">Number of drawers in toolbox ' + esc(pre.number) + '</label><input class="field" id="ef-drw" type="number" min="1" max="30" required>' : '') +
     '<label>Assigned toolboxes</label><div style="max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px;margin:6px 0 13px">' + (boxes.length ? boxes.map(function (t) {
-      return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
+      return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 || (pre && pre.toolboxId === t.toolboxId) ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
     '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label>' +
     (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Activate now and send the welcome e-mail (app link, login name, PIN and instructions). Untick to create as INVITED awaiting approval.</label>') +
     '<div class="banner">No automatic registration from the personnel matrix. Verify the person before granting access.</div>' +
@@ -1149,6 +1165,7 @@ function employeeForm(u) {
     var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
       : authed('adminCreateEmployee', { displayName: $('ef-name').value, email: $('ef-email').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value, toolboxIds: tbs, canSubmit: $('ef-sub').checked, activateNow: $('ef-act').checked });
     var actNow = !u && $('ef-act').checked;
+    if (pre) p = p.then(function (r) { var up = { drawerCount: $('ef-drw').value, status: 'ACTIVE', publicEnabled: true }; if (r && r.userId) up.mechanicUserId = r.userId; return authed('adminUpdateToolbox', pre.toolboxId, up); });
     p.then(function () { closeModal(); toast(u ? 'Employee updated.' : (actNow ? 'Employee created. Welcome e-mail sent.' : 'Employee created (awaiting approval).')); adminView('employees'); }).catch(fail);
   };
 }
