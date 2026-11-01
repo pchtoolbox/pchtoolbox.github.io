@@ -1167,7 +1167,7 @@ function employeeForm(u, pre) {
   openModal(u ? 'Edit employee' : (pre ? 'Finish set-up · Toolbox ' + pre.number : (qm ? 'Register Engineer' : 'Add Employee')), '<form id="ef">' +
     (pre ? '<div class="banner" style="background:#fff4e8;border-color:#fdba74;color:#9a3412"><b>AWAITING SETUP</b> – toolbox ' + esc(pre.boxName) + '. Pre-filled from the register; complete the blank fields (e-mail first) and create the employee. The toolbox becomes ACTIVE and the engineer receives the access e-mail; he registers each drawer himself while taking the photos. <a href="#" onclick="closeModal();adminView(\'toolbox\',\'' + pre.toolboxId + '\');return false">Open toolbox details instead</a></div>' : '') +
     '<label for="ef-name">Full name</label><input class="field" id="ef-name" required maxlength="80" value="' + esc(u ? u.displayName : (pre ? pre.name : '')) + '">' +
-    '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + (u ? ' disabled' : '') + '>' +
+    '<label for="ef-email">E-mail (the welcome e-mail with the app link, login and PIN goes here)</label><input class="field" id="ef-email" type="email" required maxlength="254" value="' + esc(u ? u.email : '') + '"' + '>' +
     '<div class="compare"><div><label for="ef-emp">Employee No.' + (u ? '' : ' (required)') + '</label><input class="field" id="ef-emp" maxlength="20" ' + (u ? '' : 'required ') + 'value="' + esc(u ? u.employeeNo || '' : (pre ? pre.emp : '')) + '"></div>' +
     '<div><label for="ef-tag">Tool Tag No.' + (u ? '' : ' (required)') + '</label><input class="field" id="ef-tag" maxlength="20" ' + (u ? '' : 'required ') + 'value="' + esc(u ? u.toolTagNo || '' : (pre ? pre.tag : '')) + '"></div></div>' +
     (u && u.role === 'MECHANIC' ? '<label for="ef-login">Login name (used with the PIN)</label><input class="field" id="ef-login" maxlength="30" value="' + esc(u.loginName || '') + '">' : '') +
@@ -1176,7 +1176,7 @@ function employeeForm(u, pre) {
       return '<label class="check"><input type="checkbox" name="ef-tb" value="' + t.toolboxId + '"' + (have.indexOf(t.toolboxId) > -1 || (pre && pre.toolboxId === t.toolboxId) ? ' checked' : '') + '> ' + esc(boxName(t)) + ' <span class="muted">' + esc(t.status) + '</span></label>'; }).join('') : '<p class="muted">No toolboxes yet.</p>') + '</div>' +
     '<label class="check"><input type="checkbox" id="ef-sub"' + (canSub ? ' checked' : '') + '> May submit drawer photos for assigned toolboxes</label></div>' +
       '<div class="banner" id="ef-ownbox" style="margin-bottom:13px"></div>' +
-    (u ? '' : '<label class="check"><input type="checkbox" id="ef-act" checked> Activate now and send the welcome e-mail (app link, login name, PIN and instructions). Untick to create as INVITED awaiting approval.</label>') +
+    (u ? '<label class="check"><input type="checkbox" id="ef-resend"> Re-send the access e-mail now (app link, login name and instructions). Changing the e-mail re-sends it automatically.</label>' : '<label class="check"><input type="checkbox" id="ef-act" checked> Activate now and send the welcome e-mail (app link, login name, PIN and instructions). Untick to create as INVITED awaiting approval.</label>') +
     '<div class="banner">No automatic registration from the personnel matrix. Verify the person before granting access.</div>' +
     '<div class="actionline"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="btn">' + (u ? 'Save' : 'Create employee') + '</button></div></form>');
   var ownTb = u && u.toolboxes.length ? u.toolboxes[0] : null;
@@ -1193,12 +1193,15 @@ function employeeForm(u, pre) {
     e.preventDefault();
     var tbs = Array.prototype.slice.call(document.querySelectorAll('input[name=ef-tb]:checked')).map(function (x) { return x.value; });
       if ($('ef-role').value === 'MECHANIC') tbs = u ? u.toolboxes.map(function (t) { return t.toolboxId; }) : (pre ? [pre.toolboxId] : []);
-    var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
+    var p = u ? (($('ef-login') && $('ef-login').value && $('ef-login').value !== (u.loginName || '')) ? authed('adminSetLoginName', u.userId, $('ef-login').value) : Promise.resolve()).then(function () { return authed('adminUpdateEmployee', u.userId, { displayName: $('ef-name').value, email: $('ef-email').value, resendInvite: $('ef-resend').checked, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value }); }).then(function () { return authed('adminSetAssignments', u.userId, tbs, $('ef-sub').checked); })
       : authed('adminCreateEmployee', { displayName: $('ef-name').value, email: $('ef-email').value, role: $('ef-role').value, employeeNo: $('ef-emp').value, toolTagNo: $('ef-tag').value, toolboxIds: tbs, canSubmit: $('ef-sub').checked, activateNow: $('ef-act').checked });
     var actNow = !u && $('ef-act').checked;
+    var newMail = u ? $('ef-email').value.trim().toLowerCase() : '';
+    var mailSent = u && ($('ef-resend').checked || (u.status === 'ACTIVE' && newMail !== String(u.email || '').toLowerCase()));
+    var upMsg = mailSent ? 'Employee updated. Access e-mail sent to ' + newMail + '.' : 'Employee updated.';
     // Engineers: the server activates and links the toolbox. Other roles: activate the box here.
       if (pre && $('ef-role').value !== 'MECHANIC') p = p.then(function () { return authed('adminUpdateToolbox', pre.toolboxId, { status: 'ACTIVE', publicEnabled: true }); });
-    p.then(function () { closeModal(); toast(u ? 'Employee updated.' : (actNow ? 'Employee created. Welcome e-mail sent.' : 'Employee created (awaiting approval).')); adminView('employees'); }).catch(fail);
+    p.then(function () { closeModal(); toast(u ? upMsg : (actNow ? 'Employee created. Welcome e-mail sent.' : 'Employee created (awaiting approval).')); adminView('employees'); }).catch(fail);
   };
 }
 
